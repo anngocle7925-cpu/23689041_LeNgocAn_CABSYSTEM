@@ -342,4 +342,218 @@ flowchart TD
 * **FR-25:** Hệ thống phải thực hiện lưu vết (Audit Log) đối với các thao tác quan trọng để phục vụ công tác kiểm tra, đối soát khi xảy ra sự cố.
 
 
+## 7. Quy tắc nghiệp vụ (Business Rules)
 
+Dựa trên tài liệu yêu cầu của hệ thống CAB, các quy tắc nghiệp vụ (Business Rules) được thiết lập để ràng buộc logic vận hành như sau:
+
+### 7.1. Quy tắc điều phối và tìm kiếm tài xế (Matching Rules)
+* **BR-01 (Tiêu chí tìm tài xế):** Khi khách hàng tạo yêu cầu đặt xe, hệ thống phải tự động xác định các tài xế phù hợp dựa trên vị trí, trạng thái sẵn sàng và các tiêu chí vận hành khác[cite: 1].
+* **BR-02 (Cơ chế ưu tiên và chuyển tiếp):** Hệ thống ưu tiên đề xuất tài xế phù hợp và ở gần khách hàng nhất[cite: 1]. Nếu tài xế đầu tiên từ chối hoặc không phản hồi, hệ thống phải tiếp tục tìm tài xế khác mà không yêu cầu khách hàng phải tạo lại yêu cầu[cite: 1].
+* **BR-03 (Xử lý khi không tìm thấy tài xế):** Trong trường hợp không tìm được tài xế phù hợp, khách hàng phải được thông báo rõ ràng về trạng thái của yêu cầu[cite: 1].
+
+### 7.2. Quy tắc quản lý trạng thái chuyến đi (Trip Lifecycle Rules)
+* **BR-04 (Trạng thái sẵn sàng):** Tài xế chỉ có thể nhận thông báo chuyến mới khi đã chủ động chuyển sang trạng thái sẵn sàng nhận chuyến trong quá trình làm việc[cite: 1].
+* **BR-05 (Cập nhật tiến trình tuần tự):** Trong quá trình thực hiện chuyến đi, tài xế bắt buộc phải cập nhật tuần tự các mốc trạng thái gồm: đã đến điểm đón, đã đón khách, đang di chuyển và hoàn thành chuyến[cite: 1].
+* **BR-06 (Lưu vết định vị):** Hệ thống phải lưu trữ thông tin vị trí của tài xế để hỗ trợ tìm tài xế gần nhất và cải thiện khả năng dự kiến thời gian đến (ETA)[cite: 1].
+
+### 7.3. Quy tắc tính cước và thanh toán (Billing & Payment Rules)
+* **BR-07 (Tính cước tự động):** Ngay sau khi chuyến đi hoàn thành, hệ thống phải xác định số tiền khách hàng phải trả dựa trên loại dịch vụ và thông tin chuyến đi[cite: 1].
+* **BR-08 (Bảo mật dữ liệu thanh toán):** Hệ thống CAB tuyệt đối không được lưu trữ trực tiếp thông tin nhạy cảm của thẻ hoặc tài khoản thanh toán mà phải tích hợp với nhà cung cấp thanh toán bên ngoài[cite: 1].
+* **BR-09 (Xử lý giao dịch lỗi):** Nếu giao dịch thanh toán điện tử thất bại, hệ thống phải thông báo cho khách hàng và cho phép xử lý lại theo chính sách doanh nghiệp[cite: 1].
+
+### 7.4. Quy tắc phân quyền và bảo mật (Security & Access Rules)
+* **BR-10 (Xác thực người dùng):** Khách hàng và tài xế phải được xác thực trước khi sử dụng các chức năng yêu cầu tài khoản[cite: 1].
+* **BR-11 (Kiểm soát quyền quản trị):** Các thao tác quản trị phải được kiểm soát quyền truy cập chặt chẽ để nhân viên thông thường không thể thực hiện các thao tác nhạy cảm[cite: 1].
+* **BR-12 (Lưu vết hệ thống):** Hệ thống phải lưu vết các thao tác quan trọng để phục vụ công tác kiểm tra khi có sự cố xảy ra[cite: 1].
+
+### 7.5. Các quy tắc nghiệp vụ mở cần làm rõ (Open Business Rules / Pending Clarifications)
+* *Các nội dung sau đây hiện chưa được doanh nghiệp chốt toàn bộ chi tiết và cần Business Analyst làm rõ với các bên liên quan trước khi triển khai giải pháp:*
+  * Cách thức và công thức cụ thể để tính cước phí chuyến đi[cite: 1].
+  * Các tiêu chí cụ thể để ưu tiên tài xế và thời gian giới hạn tài xế phải phản hồi[cite: 1].
+  * Chính sách cụ thể khi hủy chuyến đi[cite: 1].
+  * Kịch bản và phương án xử lý khi mất kết nối mạng[cite: 1].
+  * Quy định về thời gian lưu trữ dữ liệu của hệ thống[cite: 1].
+ 
+
+## 8. Yêu cầu phi chức năng (Non-Functional Requirements)
+
+Dựa trên các định hướng và ràng buộc của dự án, các yêu cầu phi chức năng đối với hệ thống CAB bao gồm:
+
+### 8.1. Tính sẵn sàng và Ổn định (Availability & Stability)
+* **NFR-01 (Hoạt động trong giờ cao điểm):** Hệ thống phải duy trì hoạt động ổn định ngay cả vào các thời điểm nhu cầu đặt xe tăng cao[cite: 1].
+* **NFR-02 (Cô lập lỗi - Fault Isolation):** Lỗi phát sinh ở chức năng thanh toán hoặc chức năng thông báo tuyệt đối không được làm cho toàn bộ hệ thống đặt xe ngừng hoạt động[cite: 1].
+
+### 8.2. Khả năng mở rộng (Scalability)
+* **NFR-03 (Mở rộng thành phần độc lập):** Các thành phần của hệ thống cần được thiết kế để có khả năng mở rộng độc lập khi tải hệ thống tăng lên[cite: 1].
+* **NFR-04 (Triển khai từng phần):** Cho phép triển khai các chức năng mới theo từng phần mà hạn chế tối đa việc ảnh hưởng đến các chức năng đang hoạt động ổn định[cite: 1].
+
+### 8.3. Bảo mật và Kiểm soát (Security)
+* **NFR-05 (Xác thực tài khoản):** Khách hàng và tài xế bắt buộc phải được xác thực định danh trước khi sử dụng các chức năng yêu cầu tài khoản[cite: 1].
+* **NFR-06 (Phân quyền quản trị):** Các thao tác trên giao diện quản trị phải được kiểm soát quyền truy cập chặt chẽ để đảm bảo an toàn[cite: 1].
+* **NFR-07 (Bảo vệ dữ liệu):** Thông tin cá nhân, thông tin phương tiện, dữ liệu vị trí GPS và dữ liệu giao dịch phải được bảo mật an toàn[cite: 1].
+* **NFR-08 (Lưu vết hệ thống):** Hệ thống phải thực hiện lưu vết (Audit Log) các thao tác quan trọng để phục vụ công tác kiểm tra, đối soát khi xảy ra sự cố[cite: 1].
+
+### 8.4. Tính linh hoạt kiến trúc (Maintainability & Extensibility)
+* **NFR-09 (Kiến trúc mở rộng dài hạn):** Hệ thống phải sở hữu kiến trúc linh hoạt để trong tương lai có thể dễ dàng bổ sung các loại dịch vụ mới, thêm phương thức thanh toán, tích hợp thêm nhà cung cấp thông báo hoặc thay đổi thành phần kỹ thuật mà không cần xây dựng lại toàn bộ ứng dụng[cite: 1].
+
+### 8.5. Ràng buộc về thời gian (Time Constraint)
+* **NFR-10 (Tiến độ triển khai):** Toàn bộ sản phẩm phải được xây dựng và hoàn tất triển khai trong khoảng thời gian giới hạn là 7 tuần[cite: 1].
+
+
+## 9. Thiết kế thực thể dữ liệu & Sơ đồ ERD (Entity-Relationship Diagram)
+
+Dựa trên các yêu cầu nghiệp vụ của hệ thống CAB, mô hình dữ liệu được cấu trúc để quản lý thông tin người dùng, phương tiện, tiến trình chuyến đi, giao dịch thanh toán, hệ thống thông báo và lưu vết kiểm tra.
+
+### 9.1. Sơ đồ thực thể mối quan hệ (ERD)
+
+```mermaid
+erDiagram
+    CUSTOMER ||--o{ TRIP : "tạo yêu cầu"
+    DRIVER ||--o{ TRIP : "thực hiện"
+    DRIVER ||--|{ VEHICLE : "sở hữu"
+    TRIP ||--o| PAYMENT : "thanh toán"
+    CUSTOMER ||--o{ NOTIFICATION : "nhận"
+    DRIVER ||--o{ NOTIFICATION : "nhận"
+    STAFF ||--o{ AUDIT_LOG : "sinh ra"
+
+    CUSTOMER {
+        string customer_id PK
+        string name
+        string phone
+        string email
+        string password_hash
+    }
+    
+    DRIVER {
+        string driver_id PK
+        string name
+        string phone
+        string status "Ready, Busy, Offline"
+        float current_latitude
+        float current_longitude
+    }
+    
+    VEHICLE {
+        string vehicle_id PK
+        string driver_id FK
+        string vehicle_type
+        string license_plate
+    }
+    
+    TRIP {
+        string trip_id PK
+        string customer_id FK
+        string driver_id FK
+        string pickup_location
+        string dropoff_location
+        string service_type
+        string status "Searching, Assigned, Arrived, InProgress, Completed"
+        float fare
+        datetime created_at
+    }
+    
+    PAYMENT {
+        string payment_id PK
+        string trip_id FK
+        float amount
+        string method "Cash, Electronic"
+        string status "Success, Failed, Pending"
+    }
+    
+    NOTIFICATION {
+        string notification_id PK
+        string recipient_id
+        string content
+        string channel
+        string status
+    }
+    
+    STAFF {
+        string staff_id PK
+        string username
+        string role "Admin, Operator"
+    }
+    
+    AUDIT_LOG {
+        string log_id PK
+        string staff_id FK
+        string action
+        datetime timestamp
+        string details
+    }
+
+```
+
+### 9.2. Mô tả chi tiết các thực thể chính
+
+* **Thực thể Customer (Khách hàng):** Lưu trữ thông tin định danh và tài khoản đăng nhập của khách hàng sử dụng dịch vụ đặt xe.
+
+
+* **Thực thể Driver (Tài xế):** Lưu trữ thông tin cá nhân, trạng thái hoạt động hiện tại (*Ready/Busy*) và tọa độ vị trí thực tế (`lat`, `lng`) phục vụ cho thuật toán tìm kiếm tài xế gần nhất.
+
+
+* **Thực thể Vehicle (Phương tiện):** Quản lý thông tin chi tiết về xe của tài xế (loại xe, biển số xe).
+
+
+* **Thực thể Trip (Chuyến đi):** Thực thể trung tâm lưu vết toàn bộ vòng đời của một chuyến đi: điểm đón, điểm đến, loại dịch vụ, trạng thái chuyến đi và cước phí.
+
+
+* **Thực thể Payment (Thanh toán):** Lưu trữ kết quả giao dịch cước phí (tiền mặt hoặc điện tử) và trạng thái thanh toán mà không lưu thông tin thẻ nhạy cảm.
+
+
+* **Thực thể Notification (Thông báo):** Quản lý nội dung và trạng thái gửi thông báo đến khách hàng và tài xế qua các cột mốc hành trình.
+
+
+* **Thực thể Staff & Audit Log (Nhân viên vận hành & Lưu vết):** Quản lý quyền hạn truy cập của nhân viên quản trị (RBAC) và lưu vết các thao tác quan trọng để phục vụ kiểm tra sự cố.
+
+
+## 10. Sơ đồ Use Case (Use Case Diagram)
+
+Sơ đồ Use Case thể hiện tổng quan các tác nhân (Actors) tương tác với hệ thống CAB và các chức năng chính (Use Cases) mà hệ thống cung cấp.
+
+### 10.1. Sơ đồ Use Case tổng quát
+
+```mermaid
+flowchart LR
+    subgraph Actors ["Tác nhân (Actors)"]
+        direction TB
+        Customer((Khách hàng))
+        Driver((Tài xế))
+        Operator((Nhân viên vận hành))
+        PaymentGateway((Cổng thanh toán ngoài))
+    end
+
+    subgraph System ["Hệ thống CAB"]
+        direction TB
+        UC1[Quản lý tài khoản & Xác thực]
+        UC2[Đặt xe & Điều phối thông minh]
+        UC3[Quản lý hành trình & Định vị GPS]
+        UC4[Tính cước & Thanh toán]
+        UC5[Quản lý vận hành & Báo cáo]
+        UC6[Hệ thống thông báo tự động]
+    end
+
+    Customer --> UC1
+    Customer --> UC2
+    Customer --> UC3
+    Customer --> UC4
+    Customer --> UC6
+
+    Driver --> UC1
+    Driver --> UC2
+    Driver --> UC3
+    Driver --> UC6
+
+    Operator --> UC1
+    Operator --> UC5
+
+    UC4 --> PaymentGateway
+
+```
+
+### 10.2. Mô tả các Tác nhân (Actors)
+
+* **Khách hàng (Customer):** Người sử dụng dịch vụ có nhu cầu đặt xe, theo dõi hành trình di chuyển, thanh toán cước phí và nhận thông báo từ hệ thống.
+* **Tài xế (Driver):** Người cung cấp dịch vụ vận chuyển, thực hiện cập nhật trạng thái sẵn sàng, tiếp nhận yêu cầu chuyến đi, cập nhật các mốc hành trình.
+* **Nhân viên vận hành (Operator/Admin):** Quản lý thông tin hệ thống, theo dõi tình trạng chuyến đi, hỗ trợ xử lý sự cố và trích xuất báo cáo kinh doanh.
+* **Cổng thanh toán ngoài (External Payment Gateway):** Hệ thống thanh toán điện tử bên thứ ba tích hợp để xử lý các giao dịch trực tuyến của khách hàng.
