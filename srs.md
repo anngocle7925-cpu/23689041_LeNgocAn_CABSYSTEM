@@ -243,6 +243,103 @@ flowchart TD
     S -->|Thanh cong| T[Xác nhận thanh toán thành công] --> Q
     S -->|That bai| U[Thông báo lỗi thanh toán và Cho phép xử lý lại] --> Q
 
+```
+
+### 1. Phân nhóm Yêu cầu chức năng hệ thống CAB
+
+#### 1.1. Nhóm Quản lý tài khoản & Xác thực (Authentication & User Management)
+
+* **FR-01:** Hệ thống phải cho phép khách hàng thực hiện đăng ký tài khoản mới, đăng nhập và cập nhật thông tin cá nhân.
+
+
+* **FR-02:** Hệ thống phải cho phép tài xế đăng ký tài khoản hoặc được nhân viên vận hành tạo tài khoản, đồng thời cập nhật hồ sơ cá nhân và thông tin phương tiện.
+
+
+* **FR-03:** Hệ thống phải thực hiện xác thực (Authentication) đối với khách hàng và tài xế trước khi cho phép sử dụng các chức năng yêu cầu tài khoản.
+
+
+
+#### 1.2. Nhóm Đặt xe & Điều phối thông minh (Booking & Matching)
+
+* **FR-04:** Khách hàng phải có khả năng nhập điểm đón, điểm đến, lựa chọn loại xe và gửi yêu cầu đặt xe lên hệ thống.
+
+
+* **FR-05:** Hệ thống phải có chức năng tự động tìm kiếm và xác định các tài xế phù hợp dựa trên vị trí, trạng thái sẵn sàng (`Ready`) và các tiêu chí vận hành.
+
+
+* **FR-06:** Hệ thống phải tự động gửi thông báo mời nhận chuyến đến tài xế được ưu tiên gần nhất.
+
+
+* **FR-07:** Hệ thống phải cung cấp cơ chế xử lý khi tài xế từ chối hoặc không phản hồi: tự động chuyển sang tìm tài xế tiếp theo mà không yêu cầu khách hàng tạo lại yêu cầu.
+
+
+* **FR-08:** Hệ thống phải hiển thị thông báo rõ ràng cho khách hàng trong trường hợp hoàn toàn không tìm thấy tài xế phù hợp.
+
+
+
+#### 1.3. Nhóm Quản lý hành trình & Định vị (Trip Management & Location Tracking)
+
+* **FR-09:** Tài xế phải có khả năng chuyển đổi trạng thái hoạt động sang sẵn sàng nhận chuyến (`Ready`).
+
+
+* **FR-10:** Hệ thống phải cho phép tài xế cập nhật các mốc trạng thái của chuyến đi bao gồm: *đã đến điểm đón*, *đã đón khách*, *đang di chuyển*, và *hoàn thành chuyến*.
+
+
+* **FR-11:** Hệ thống phải liên tục thu thập và lưu trữ thông tin vị trí (tọa độ GPS) của tài xế để hỗ trợ việc tìm tài xế gần nhất và tính toán thời gian dự kiến đến (ETA).
+
+
+* **FR-12:** Khách hàng phải có khả năng theo dõi trạng thái chuyến đi theo thời gian thực: biết hệ thống đang tìm tài xế, tài xế nào nhận chuyến, thời gian dự kiến tài xế đến và trạng thái hành trình.
+
+
+* **FR-13:** Khách hàng phải có thể xem lại lịch sử chuyến đi và thực hiện đánh giá tài xế sau khi hoàn thành chuyến.
+
+
+
+#### 1.4. Nhóm Tính cước & Thanh toán (Billing & Payment)
+
+* **FR-14:** Hệ thống phải tự động tính toán số tiền cước khách hàng phải trả dựa trên loại dịch vụ và thông tin chi tiết của chuyến đi sau khi hoàn thành.
+
+
+* **FR-15:** Hệ thống phải hỗ trợ phương thức thanh toán bằng tiền mặt hoặc tích hợp với nhà cung cấp thanh toán điện tử bên ngoài.
+
+
+* **FR-16:** Hệ thống phải đảm bảo không lưu trữ trực tiếp các thông tin nhạy cảm về thẻ hoặc tài khoản thanh toán điện tử của khách hàng trong cơ sở dữ liệu nội bộ.
+
+
+* **FR-17:** Hệ thống phải tự động thông báo cho khách hàng và cung cấp cơ chế xử lý lại (retry) nếu giao dịch thanh toán điện tử gặp sự cố thất bại.
+
+
+
+#### 1.5. Nhóm Thông báo (Notification System)
+
+* **FR-18:** Hệ thống phải tự động gửi thông báo đến khách hàng khi: yêu cầu được tiếp nhận, có tài xế nhận chuyến, tài xế đến điểm đón, chuyến đi hoàn thành và có kết quả thanh toán.
+
+
+* **FR-19:** Hệ thống phải gửi thông báo về chuyến đi mới hoặc các thay đổi liên quan đến chuyến đang thực hiện cho tài xế.
+
+
+* **FR-20:** Hệ thống phải được thiết kế theo kiến trúc mở để dễ dàng tích hợp thêm các kênh thông báo mới trong tương lai mà không ảnh hưởng toàn bộ hệ thống.
+
+
+
+#### 1.6. Nhóm Quản trị vận hành & Báo cáo (Operations & Reporting)
+
+* **FR-21:** Hệ thống phải cung cấp giao diện quản trị phân quyền (RBAC) cho nhân viên vận hành để quản lý thông tin khách hàng, tài xế, phương tiện và chuyến đi.
+
+
+* **FR-22:** Nhân viên vận hành phải có khả năng theo dõi các chuyến đang diễn ra, kiểm tra trạng thái tài xế, hỗ trợ xử lý khi chuyến đi gặp lỗi và tra cứu lịch sử giao dịch.
+
+
+* **FR-23:** Hệ thống phải cung cấp tính năng trích xuất báo cáo tổng hợp phục vụ Ban lãnh đạo bao gồm: số lượng chuyến, doanh thu, tỷ lệ chuyến hoàn thành, tỷ lệ hủy chuyến và hiệu quả hoạt động của tài xế.
+
+
+
+#### 1.7. Nhóm Bảo mật & Kiểm soát (Security & Auditing)
+
+* **FR-24:** Hệ thống phải kiểm soát chặt chẽ quyền truy cập vào các chức năng quản trị, ngăn chặn nhân viên thông thường thực hiện thao tác nhạy cảm.
+
+
+* **FR-25:** Hệ thống phải thực hiện lưu vết (Audit Log) đối với các thao tác quan trọng để phục vụ công tác kiểm tra, đối soát khi xảy ra sự cố.
 
 
 
