@@ -605,3 +605,51 @@ flowchart TD
 * **Luồng xử lý ngoại lệ khi tài xế bận/từ chối (Steps G -> I):** Đảm bảo cơ chế tự động chuyển tiếp sang tài xế kế tiếp một cách mượt mà, tối ưu hóa tỷ lệ nhận chuyến.
 * **Luồng thực hiện chuyến đi & định vị (Steps J -> O):** Cập nhật tuần tự các mốc trạng thái, đồng thời duy trì luồng dữ liệu GPS theo thời gian thực để khách hàng theo dõi hành trình.
 * **Luồng tính cước và thanh toán (Steps P -> W):** Tách biệt rõ ràng giữa thanh toán tiền mặt và thanh toán điện tử qua bên thứ ba, đảm bảo an toàn thông tin nhạy cảm và có cơ chế xử lý lỗi khi giao dịch gặp sự cố.
+
+
+## 12. Tiêu chí chấp nhận (Acceptance Criteria - AC)
+
+Dưới đây là các tiêu chí chấp nhận (Acceptance Criteria) theo định dạng Given-When-Then cho các chức năng cốt lõi của hệ thống CAB, giúp đội ngũ phát triển và kiểm thử (QA/QC) chiếu vào để nghiệm thu tính năng:
+
+### 12.1. Nhóm Đặt xe & Điều phối (Booking & Matching)
+
+* **AC-01: Tạo yêu cầu đặt xe thành công**
+* **Given** Khách hàng đã đăng nhập thành công vào ứng dụng di động.
+* **When** Khách hàng nhập thông tin điểm đón, điểm đến, lựa chọn loại dịch vụ (xe máy/ô tô) và bấm nút "Đặt xe".
+* **Then** Hệ thống phải khởi tạo thành công mã chuyến đi (`trip_id`), hiển thị màn hình trạng thái "Đang tìm tài xế" (`Searching`) và ghi nhận vào cơ sở dữ liệu.
+
+
+* **AC-02: Cơ chế tự động tìm và chuyển tiếp tài xế**
+* **Given** Yêu cầu đặt xe đang ở trạng thái tìm kiếm (`Searching`).
+* **When** Thuật toán định vị quét và tìm thấy danh sách tài xế ở trạng thái `Ready` trong khu vực, hệ thống gửi thông báo mời nhận chuyến đến tài xế ưu tiên số 1.
+* **And** Nếu tài xế số 1 bấm "Từ chối" hoặc hết thời gian chờ (`Timeout`), hệ thống tự động loại bỏ tài xế đó và chuyển ngay yêu cầu sang tài xế ưu tiên tiếp theo trong danh sách mà không làm gián đoạn phía khách hàng.
+
+
+* **AC-03: Xử lý khi không tìm thấy tài xế**
+* **Given** Hệ thống đã quét toàn bộ danh sách tài xế khả dụng trong bán kính cho phép.
+* **When** Đã hết danh sách mà không có tài xế nào chấp nhận hoặc không có tài xế trực tuyến.
+* **Then** Hệ thống phải dừng tìm kiếm, hiển thị thông báo rõ ràng "Không tìm thấy tài xế phù hợp, vui lòng thử lại sau" cho khách hàng.
+
+
+
+### 12.2. Nhóm Thực hiện chuyến đi (Trip Execution)
+
+* **AC-04: Cập nhật tuần tự các mốc trạng thái hành trình**
+* **Given** Tài xế đã chấp nhận chuyến đi của khách hàng.
+* **When** Tài xế lần lượt thực hiện các thao tác trên ứng dụng: bấm "Đến điểm đón" $\rightarrow$ bấm "Đã đón khách / Bắt đầu di chuyển" $\rightarrow$ bấm "Hoàn thành chuyến đi".
+* **Then** Hệ thống phải cập nhật chính xác các trạng thái tương ứng trên cơ sở dữ liệu và kích hoạt thông báo đẩy (Push Notification) đến khách hàng theo từng mốc thời gian thực.
+
+
+
+### 12.3. Nhóm Tính cước & Thanh toán (Billing & Payment)
+
+* **AC-05: Tính cước tự động sau khi kết thúc chuyến**
+* **Given** Tài xế xác nhận trạng thái "Hoàn thành chuyến đi".
+* **When** Hệ thống ghi nhận kết thúc hành trình.
+* **Then** Hệ thống tự động tính toán tổng số tiền cước dựa trên loại dịch vụ và thông tin quãng đường, hiển thị chi tiết số tiền lên màn hình của cả khách hàng và tài xế.
+
+
+* **AC-06: Bảo mật và xử lý giao dịch thanh toán điện tử**
+* **Given** Khách hàng lựa chọn hình thức thanh toán điện tử.
+* **When** Hệ thống chuyển hướng yêu cầu sang cổng thanh toán của bên thứ ba.
+* **Then** Giao dịch được xử lý an toàn mà hệ thống CAB tuyệt đối không lưu trữ thông tin số thẻ hay tài khoản ngân hàng của người dùng. Nếu giao dịch thất bại, hệ thống phải hiển thị thông báo lỗi ngay lập tức và cung cấp nút bấm "Thử lại".
