@@ -1,6 +1,6 @@
-Bước 1:
+###Bước 1:
 
-Tìm hiểu nghiệp vụ, hệ thống hiện tại có những vấn đề gì, mục tiêu, vấn đề hiện tại là gì, ai là người sử dụng hệ thống 
+###Tìm hiểu nghiệp vụ, hệ thống hiện tại có những vấn đề gì, mục tiêu, vấn đề hiện tại là gì, ai là người sử dụng hệ thống 
 
 ### 1. Tổng quan nghiệp vụ & Vấn đề của hệ thống hiện tại
 
