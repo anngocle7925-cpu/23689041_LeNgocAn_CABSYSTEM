@@ -104,30 +104,15 @@ Doanh nghiệp hiện tại tiếp nhận nhu cầu đặt xe thông qua tổng 
 Bước 2: Xác định các stakeholder và vai trò
 
 
-
 | STT | Bên liên quan (Stakeholder) | Phân loại | Vai trò và Trách nhiệm |
-| --- | --- | --- | --- |
-| 1 | **Ban lãnh đạo / Ban giám đốc** | Nội bộ | Khởi xướng và định hướng xây dựng nền tảng CAB mới để thay thế hệ thống cũ, với yêu cầu có khả năng mở rộng và phục vụ lượng lớn người dùng. Yêu cầu hệ thống cung cấp các báo cáo quản trị như doanh thu, số lượng chuyến, tỷ lệ hoàn thành/hủy chuyến và hiệu quả hoạt động của tài xế.
+| :--- | :--- | :--- | :--- |
+| 1 | **Ban lãnh đạo / Ban giám đốc** | Nội bộ | Khởi xướng và định hướng xây dựng nền tảng CAB mới để thay thế hệ thống cũ, với yêu cầu có khả năng mở rộng và phục vụ lượng lớn người dùng. Yêu cầu hệ thống cung cấp các báo cáo quản trị như doanh thu, số lượng chuyến, tỷ lệ hoàn thành/hủy chuyến và hiệu quả hoạt động của tài xế. |
+| 2 | **Khách hàng** | Bên ngoài (Người dùng) | Đăng ký, đăng nhập và quản lý thông tin cá nhân trên ứng dụng. Gửi yêu cầu đặt xe, theo dõi vị trí tài xế và trạng thái chuyến đi. Trả tiền cước bằng tiền mặt hoặc thanh toán điện tử, xem lịch sử chuyến đi và đánh giá tài xế sau khi hoàn thành. |
+| 3 | **Tài xế** | Bên ngoài (Người cung cấp dịch vụ) | Tạo tài khoản (hoặc được tạo hộ), cập nhật hồ sơ cá nhân và thông tin phương tiện. Bật trạng thái sẵn sàng, nhận thông báo chuyến mới, đưa ra quyết định chấp nhận hoặc từ chối chuyến đi. Cập nhật trạng thái trong suốt hành trình (đã đến điểm đón, đã đón khách, đang di chuyển, hoàn thành) và chia sẻ dữ liệu vị trí liên tục. |
+| 4 | **Nhân viên vận hành** | Nội bộ | Sử dụng giao diện quản trị có phân quyền để quản lý dữ liệu khách hàng, tài xế, phương tiện và chuyến đi. Giám sát tiến trình các chuyến đang diễn ra, tra cứu lịch sử giao dịch và hỗ trợ xử lý khi có chuyến bị lỗi. |
+| 5 | **Business Analyst (BA)** | Nội bộ (Đội dự án) | Phân tích và xác định rõ phạm vi, quy trình, yêu cầu chức năng/phi chức năng, quy tắc nghiệp vụ và các tác nhân của hệ thống. Chịu trách nhiệm làm việc với các bên liên quan để làm rõ các chi tiết chưa chốt (cách tính cước, tiêu chí tìm tài xế, chính sách hủy chuyến, v.v.) trước khi đội phát triển bắt tay vào làm. |
+| 6 | **Nhóm phát triển** | Nội bộ (Đội dự án) | Chịu trách nhiệm xây dựng các giải pháp và phát triển hệ thống nền tảng CAB dựa trên những vấn đề đã được Business Analyst làm rõ. Đảm bảo kiến trúc linh hoạt để sau này có thể bổ sung dịch vụ, cổng thanh toán hoặc thông báo mà không cần xây dựng lại từ đầu. |
+| 7 | **Nhà cung cấp thanh toán bên ngoài** | Đối tác thứ ba | Tích hợp vào hệ thống CAB để xử lý giao dịch điện tử và tính cước. Đảm bảo việc thanh toán diễn ra an toàn mà không yêu cầu hệ thống CAB phải lưu trữ trực tiếp các thông tin nhạy cảm của thẻ hoặc tài khoản người dùng. |
+| 8 | **Nhà cung cấp thông báo** | Đối tác thứ ba | Cung cấp kênh gửi thông báo đến khách hàng và tài xế trong các cột mốc quan trọng (nhận chuyến, đến điểm đón, hoàn thành chuyến, kết quả thanh toán). Được tích hợp theo kiến trúc mở rộng để doanh nghiệp có thể thêm kênh thông báo mới trong tương lai. |
 
- |
-| 2 | **Khách hàng** | Bên ngoài (Người dùng) | Đăng ký, đăng nhập và quản lý thông tin cá nhân trên ứng dụng. Gửi yêu cầu đặt xe, theo dõi vị trí tài xế và trạng thái chuyến đi. Trả tiền cước bằng tiền mặt hoặc thanh toán điện tử, xem lịch sử chuyến đi và đánh giá tài xế sau khi hoàn thành.
 
- |
-| 3 | **Tài xế** | Bên ngoài (Người cung cấp dịch vụ) | Tạo tài khoản (hoặc được tạo hộ), cập nhật hồ sơ cá nhân và thông tin phương tiện. Bật trạng thái sẵn sàng, nhận thông báo chuyến mới, đưa ra quyết định chấp nhận hoặc từ chối chuyến đi. Cập nhật trạng thái trong suốt hành trình (đã đến điểm đón, đã đón khách, đang di chuyển, hoàn thành) và chia sẻ dữ liệu vị trí liên tục.
-
- |
-| 4 | **Nhân viên vận hành** | Nội bộ | Sử dụng giao diện quản trị có phân quyền để quản lý dữ liệu khách hàng, tài xế, phương tiện và chuyến đi. Giám sát tiến trình các chuyến đang diễn ra, tra cứu lịch sử giao dịch và hỗ trợ xử lý khi có chuyến bị lỗi.
-
- |
-| 5 | **Business Analyst (BA)** | Nội bộ (Đội dự án) | Phân tích và xác định rõ phạm vi, quy trình, yêu cầu chức năng/phi chức năng, quy tắc nghiệp vụ và các tác nhân của hệ thống. Chịu trách nhiệm làm việc với các bên liên quan để làm rõ các chi tiết chưa chốt (cách tính cước, tiêu chí tìm tài xế, chính sách hủy chuyến, v.v.) trước khi đội phát triển bắt tay vào làm.
-
- |
-| 6 | **Nhóm phát triển** | Nội bộ (Đội dự án) | Chịu trách nhiệm xây dựng các giải pháp và phát triển hệ thống nền tảng CAB dựa trên những vấn đề đã được Business Analyst làm rõ. Đảm bảo kiến trúc linh hoạt để sau này có thể bổ sung dịch vụ, cổng thanh toán hoặc thông báo mà không cần xây dựng lại từ đầu.
-
- |
-| 7 | **Nhà cung cấp thanh toán bên ngoài** | Đối tác thứ ba | Tích hợp vào hệ thống CAB để xử lý giao dịch điện tử và tính cước. Đảm bảo việc thanh toán diễn ra an toàn mà không yêu cầu hệ thống CAB phải lưu trữ trực tiếp các thông tin nhạy cảm của thẻ hoặc tài khoản người dùng.
-
- |
-| 8 | **Nhà cung cấp thông báo** | Đối tác thứ ba | Cung cấp kênh gửi thông báo đến khách hàng và tài xế trong các cột mốc quan trọng (nhận chuyến, đến điểm đón, hoàn thành chuyến, kết quả thanh toán). Được tích hợp theo kiến trúc mở rộng để doanh nghiệp có thể thêm kênh thông báo mới trong tương lai.
-
- |
