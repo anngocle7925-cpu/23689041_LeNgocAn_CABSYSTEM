@@ -214,3 +214,35 @@ Mô tả chi tiết các bước xử lý khi một khách hàng tiến hành đ
    * *Trường hợp A (Chấp nhận):* Tài xế bấm nhận chuyến trong thời gian quy định $\rightarrow$ Hệ thống gán chuyến cho tài xế, cập nhật trạng thái chuyến đi thành `Driver Assigned` và thông báo cho khách hàng. Chuyển sang giai đoạn thực hiện chuyến.
    * *Trường hợp B (Từ chối / Hết giờ - Timeout):* Tài xế từ chối hoặc không phản hồi $\rightarrow$ Hệ thống loại bỏ tài xế này khỏi danh sách hiện tại và chuyển sang đề xuất tài xế ưu tiên tiếp theo (Lặp lại bước 4).
    * *Trường hợp C (Hết toàn bộ danh sách mà không ai nhận):* Hệ thống thông báo lỗi không tìm được tài xế cho khách hàng (`No Driver Found`) và kết thúc quy trình.
+  
+```mermaid
+flowchart TD
+    A[Khách hàng nhập điểm đón, điểm đi và chọn loại xe] --> B[Hệ thống tạo yêu cầu và khởi tạo trạng thái tìm kiếm]
+    B --> C{Tim tai xe}
+    C -->|Khong tim thay| D[Thong bao loi: Khong tim thay tai xe] --> E([Ket thuc])
+    C -->|Tim thay danh sach| F[Gui thong bao moi nhan chuyen cho tai xe uu tien so 1]
+    
+    F --> G{Tai xe phan hoi?}
+    G -->|Tu choi hoac Het gio Timeout| H[Loai tai xe nay khoi danh sach hien tai]
+    H --> I{Con tai xe khac trong danh sach?}
+    I -->|Con| F
+    I -->|Het| D
+    
+    G -->|Chap nhan| J[Hệ thống gán chuyến cho tài xế và Bắt đầu hành trình]
+
+    J --> K[Tài xế di chuyển đến điểm đón và Cập nhật: Đã đến điểm đón]
+    K --> L[Đón khách và Cập nhật: Đang di chuyển]
+    L --> M[Đến nơi và Cập nhật: Hoàn thành chuyến đi]
+    M --> N[Hệ thống tính cước dựa trên loại dịch vụ và hành trình]
+    
+    N --> O{Hinh thuc thanh toan?}
+    O -->|Tien mat| P[Khách trả trực tiếp cho tài xế] --> Q([Hoàn tất giao dịch và Đánh giá])
+    O -->|Dien tu| R[Chuyển hướng qua Cổng thanh toán bên ngoài]
+    
+    R --> S{Giao dich thanh cong?}
+    S -->|Thanh cong| T[Xác nhận thanh toán thành công] --> Q
+    S -->|That bai| U[Thông báo lỗi thanh toán và Cho phép xử lý lại] --> Q
+
+
+
+
