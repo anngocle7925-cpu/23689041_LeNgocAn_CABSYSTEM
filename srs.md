@@ -96,5 +96,3 @@ Doanh nghiệp hiện tại tiếp nhận nhu cầu đặt xe thông qua tổng 
 
 
 * **Nhà cung cấp dịch vụ thông báo (Notification Provider):** Gửi thông báo Push Notification/SMS/Email đến khách hàng và tài xế.
-
-* 
