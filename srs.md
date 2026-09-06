@@ -557,3 +557,51 @@ flowchart LR
 * **Tài xế (Driver):** Người cung cấp dịch vụ vận chuyển, thực hiện cập nhật trạng thái sẵn sàng, tiếp nhận yêu cầu chuyến đi, cập nhật các mốc hành trình.
 * **Nhân viên vận hành (Operator/Admin):** Quản lý thông tin hệ thống, theo dõi tình trạng chuyến đi, hỗ trợ xử lý sự cố và trích xuất báo cáo kinh doanh.
 * **Cổng thanh toán ngoài (External Payment Gateway):** Hệ thống thanh toán điện tử bên thứ ba tích hợp để xử lý các giao dịch trực tuyến của khách hàng.
+
+
+## 11. Biểu đồ hoạt động chi tiết (Activity Diagram)
+
+Biểu đồ hoạt động mô tả chi tiết các bước xử lý logic trong quy trình nghiệp vụ trọng tâm của hệ thống CAB (từ lúc đặt xe, điều phối tài xế, thực hiện hành trình cho đến khi hoàn tất thanh toán và đánh giá).
+
+```mermaid
+flowchart TD
+    Start([Bắt đầu]) --> A[Khách hàng nhập điểm đón, điểm đi và loại xe]
+    A --> B[Hệ thống khởi tạo yêu cầu và tạo mã chuyến đi]
+    B --> C[Hệ thống chạy thuật toán tìm kiếm tài xế Ready gần nhất]
+    
+    C --> D{Tìm thấy tài xế?}
+    D -- Không --> E[Thông báo lỗi: Không tìm thấy tài xế phù hợp] --> End([Kết thúc])
+    D -- Có --> F[Gửi thông báo đề xuất chuyến đi cho tài xế ưu tiên]
+    
+    F --> G{Tài xế phản hồi?}
+    G -- Từ chối hoặc Hết thời gian Timeout --> H[Loại tài xế khỏi danh sách tạm thời]
+    H --> I{Còn tài xế khác trong danh sách?}
+    I -- Còn --> F
+    I -- Hết --> E
+    
+    G -- Chấp nhận --> J[Hệ thống gán chuyến cho tài xế và cập nhật trạng thái]
+    J --> K[Tài xế di chuyển đến điểm đón]
+    K --> L[Tài xế cập nhật trạng thái: Đã đến điểm đón]
+    L --> M[Hệ thống gửi thông báo cho khách hàng]
+    M --> N[Khách lên xe, tài xế cập nhật: Đang di chuyển]
+    N --> O[Đến điểm đến, tài xế cập nhật: Hoàn thành chuyến đi]
+    
+    O --> P[Hệ thống tính cước tự động dựa trên hành trình và dịch vụ]
+    P --> Q{Hình thức thanh toán?}
+    
+    Q -- Tiền mặt --> R[Khách hàng thanh toán trực tiếp tiền mặt cho tài xế] --> S[Hoàn tất chuyến đi]
+    Q -- Điện tử --> T[Chuyển hướng qua Cổng thanh toán bên ngoài]
+    
+    T --> U{Giao dịch thành công?}
+    U -- Thành công --> V[Xác nhận thanh toán điện tử thành công] --> S
+    U -- Thất bại --> W[Thông báo lỗi thanh toán và cung cấp tùy chọn xử lý lại] --> S
+    
+    S --> X["Khách hàng thực hiện đánh giá (Rating) tài xế"] --> End
+```
+
+### 11.1. Mô tả chi tiết các luồng xử lý chính
+
+* **Luồng khởi tạo và điều phối (Steps A -> F):** Tiếp nhận thông tin từ khách hàng, hệ thống tự động quét vị trí tài xế sẵn sàng (`Ready`) để ghép nối thông minh mà không cần sự can thiệp thủ công của nhân viên vận hành.
+* **Luồng xử lý ngoại lệ khi tài xế bận/từ chối (Steps G -> I):** Đảm bảo cơ chế tự động chuyển tiếp sang tài xế kế tiếp một cách mượt mà, tối ưu hóa tỷ lệ nhận chuyến.
+* **Luồng thực hiện chuyến đi & định vị (Steps J -> O):** Cập nhật tuần tự các mốc trạng thái, đồng thời duy trì luồng dữ liệu GPS theo thời gian thực để khách hàng theo dõi hành trình.
+* **Luồng tính cước và thanh toán (Steps P -> W):** Tách biệt rõ ràng giữa thanh toán tiền mặt và thanh toán điện tử qua bên thứ ba, đảm bảo an toàn thông tin nhạy cảm và có cơ chế xử lý lỗi khi giao dịch gặp sự cố.
