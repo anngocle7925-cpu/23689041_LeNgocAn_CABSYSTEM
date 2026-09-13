@@ -377,3 +377,253 @@ Nói ngắn gọn: mục đích không phải là "làm ra một app đặt xe",
 - Các FR liên quan đến BR "chưa chốt" (FR-03.2, FR-05.1) mình có ghi chú lại — cần chờ làm rõ trước khi viết đặc tả chi tiết (input/output cụ thể) cho các FR này.
 - Các BR-29 → BR-36 (phi chức năng) **không** phân rã thành FR ở bước này vì chúng là **Non-Functional Requirements**, sẽ được xử lý riêng ở bước đặc tả yêu cầu phi chức năng (NFR) — không lẫn vào phân rã FR để giữ đúng bản chất hai loại yêu cầu.
 
+
+# BƯỚC 7 – USE CASE DIAGRAM
+
+## 7.1. Use Case tổng quát
+
+### 7.1.1. Xác định Actor
+
+Dựa trên phạm vi và yêu cầu của hệ thống, CAB System có các Actor chính sau:
+
+| Actor                                                      | Vai trò                                                                                                    |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Khách hàng (Customer)**                                  | Sử dụng hệ thống để đăng ký, đăng nhập, đặt xe, theo dõi chuyến đi, thanh toán và đánh giá tài xế          |
+| **Tài xế (Driver)**                                        | Quản lý thông tin cá nhân và phương tiện, cập nhật trạng thái sẵn sàng, nhận và thực hiện chuyến đi        |
+| **Nhân viên vận hành (Operator/Admin)**                    | Quản lý khách hàng, tài xế, phương tiện, giám sát chuyến đi, xử lý sự cố, tra cứu giao dịch và xem báo cáo |
+| **Cổng thanh toán (Payment Gateway)**                      | Hệ thống bên ngoài hỗ trợ xử lý các giao dịch thanh toán điện tử                                           |
+| **Nhà cung cấp dịch vụ thông báo (Notification Provider)** | Hệ thống bên ngoài hỗ trợ gửi thông báo đến khách hàng và tài xế                                           |
+
+> **Lưu ý:** Ban giám đốc, Business Analyst & đội phát triển và cơ quan quản lý/pháp lý là các **Stakeholder** của dự án nhưng không được biểu diễn là Actor trong Use Case Diagram vì không trực tiếp khởi tạo hoặc tương tác với các chức năng của CAB System trong phạm vi hệ thống đã xác định.
+
+### 7.1.2. Các nhóm Use Case chính
+
+Các yêu cầu chức năng được nhóm thành các Use Case ở mức tổng quát như sau:
+
+| Nhóm chức năng              | Use Case tổng quát      |
+| --------------------------- | ----------------------- |
+| Quản lý tài khoản           | Quản lý tài khoản       |
+| Đặt xe và quản lý chuyến đi | Đặt xe & quản lý chuyến |
+| Matching                    | Tìm & phân công tài xế  |
+| Thanh toán                  | Tính cước & thanh toán  |
+| Notification                | Gửi thông báo           |
+| Quản trị                    | Quản trị & vận hành     |
+| Reporting                   | Xem báo cáo             |
+
+### 7.1.3. Sơ đồ Use Case tổng quát
+
+```mermaid
+flowchart LR
+
+    Customer["👤 Khách hàng"]
+    Driver["🚗 Tài xế"]
+    Operator["🧑‍💼 Nhân viên vận hành"]
+    Payment["💳 Cổng thanh toán"]
+    Notification["🔔 Nhà cung cấp dịch vụ thông báo"]
+
+    subgraph CAB["CAB SYSTEM"]
+
+        UC01(("Quản lý tài khoản"))
+
+        UC02(("Đặt xe &<br/>quản lý chuyến"))
+
+        UC03(("Tìm & phân công<br/>tài xế"))
+
+        UC04(("Tính cước &<br/>thanh toán"))
+
+        UC05(("Gửi thông báo"))
+
+        UC06(("Quản trị &<br/>vận hành"))
+
+        UC07(("Xem báo cáo"))
+
+    end
+
+    Customer --- UC01
+    Customer --- UC02
+    Customer --- UC04
+
+    Driver --- UC01
+    Driver --- UC02
+    Driver --- UC03
+
+    Operator --- UC01
+    Operator --- UC02
+    Operator --- UC06
+    Operator --- UC07
+
+    Payment --- UC04
+
+    Notification --- UC05
+```
+
+### 7.1.4. Mô tả sơ đồ
+
+Sơ đồ Use Case tổng quát cho thấy CAB System được chia thành các nhóm nghiệp vụ chính.
+
+**Khách hàng** tương tác với hệ thống để quản lý tài khoản, đặt xe và theo dõi chuyến đi, đồng thời thực hiện thanh toán sau khi chuyến đi hoàn thành.
+
+**Tài xế** sử dụng hệ thống để quản lý tài khoản, cập nhật trạng thái sẵn sàng, thực hiện chuyến đi và tham gia vào quá trình tìm và phân công chuyến.
+
+**Nhân viên vận hành** sử dụng các chức năng quản trị để quản lý dữ liệu hệ thống, giám sát chuyến đi, xử lý sự cố và theo dõi các báo cáo vận hành.
+
+**Cổng thanh toán** và **Nhà cung cấp dịch vụ thông báo** là các hệ thống bên ngoài được tích hợp với CAB System để xử lý thanh toán điện tử và gửi thông báo.
+
+Sơ đồ tổng quát chỉ thể hiện các nhóm chức năng ở mức cao. Các chức năng chi tiết và quan hệ giữa chúng được làm rõ trong Use Case trung tâm ở phần tiếp theo.
+
+---
+
+## 7.2. Use Case trung tâm
+
+### 7.2.1. Xác định Use Case trung tâm
+
+Use Case trung tâm của CAB System được lựa chọn là **Đặt xe**.
+
+Đây là nghiệp vụ cốt lõi của toàn bộ hệ thống vì nó kích hoạt chuỗi nghiệp vụ chính:
+
+**Khách hàng đặt xe → hệ thống tìm tài xế → phân công tài xế → tài xế thực hiện chuyến → cập nhật trạng thái → tính cước → thanh toán → thông báo → khách hàng đánh giá tài xế.**
+
+Use Case này có liên kết trực tiếp với nhiều nhóm chức năng khác như:
+
+* Matching Service;
+* Trip Management;
+* Payment;
+* Notification;
+* Driver Management.
+
+### 7.2.2. Actor tham gia
+
+| Actor                              | Vai trò trong Use Case trung tâm                                      |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| **Khách hàng**                     | Tạo yêu cầu đặt xe, theo dõi chuyến đi, thanh toán và đánh giá tài xế |
+| **Tài xế**                         | Nhận hoặc từ chối chuyến, cập nhật vị trí và trạng thái chuyến đi     |
+| **Cổng thanh toán**                | Xử lý thanh toán điện tử khi khách hàng lựa chọn phương thức này      |
+| **Nhà cung cấp dịch vụ thông báo** | Gửi thông báo liên quan đến các sự kiện trong vòng đời chuyến đi      |
+
+### 7.2.3. Các Use Case liên quan
+
+| Use Case                        | Loại quan hệ                        | Ý nghĩa                                                         |
+| ------------------------------- | ----------------------------------- | --------------------------------------------------------------- |
+| **Tìm tài xế phù hợp**          | `<<include>>` từ Đặt xe             | Sau khi khách hàng tạo yêu cầu, hệ thống cần tìm tài xế phù hợp |
+| **Phân công tài xế**            | `<<include>>` từ Tìm tài xế phù hợp | Hệ thống gửi đề xuất chuyến cho tài xế phù hợp                  |
+| **Xử lý từ chối/timeout**       | `<<extend>>` Phân công tài xế       | Chỉ xảy ra khi tài xế từ chối hoặc không phản hồi               |
+| **Xử lý không tìm được tài xế** | `<<extend>>` Phân công tài xế       | Xảy ra khi không còn tài xế phù hợp                             |
+| **Cập nhật trạng thái chuyến**  | Nghiệp vụ liên quan                 | Tài xế cập nhật các mốc của chuyến đi                           |
+| **Theo dõi trạng thái chuyến**  | Nghiệp vụ liên quan                 | Khách hàng theo dõi trạng thái chuyến theo thời gian thực       |
+| **Tính cước chuyến**            | `<<include>>` từ Thanh toán         | Hệ thống xác định số tiền cần thanh toán                        |
+| **Thanh toán điện tử**          | `<<extend>>` Thanh toán             | Chỉ thực hiện khi khách hàng chọn phương thức điện tử           |
+| **Xử lý thanh toán thất bại**   | `<<extend>>` Thanh toán điện tử     | Chỉ xảy ra khi giao dịch không thành công                       |
+| **Gửi thông báo**               | Chức năng hỗ trợ                    | Được kích hoạt tại các sự kiện quan trọng                       |
+| **Đánh giá tài xế**             | Nghiệp vụ sau chuyến                | Khách hàng thực hiện sau khi chuyến đi hoàn thành               |
+
+### 7.2.4. Sơ đồ Use Case trung tâm
+
+```mermaid
+flowchart LR
+
+    Customer["👤 Khách hàng"]
+    Driver["🚗 Tài xế"]
+    Payment["💳 Cổng thanh toán"]
+    Notification["🔔 Nhà cung cấp<br/>dịch vụ thông báo"]
+
+    subgraph CAB["CAB SYSTEM"]
+
+        UC01(("Đặt xe"))
+
+        UC02(("Tìm tài xế<br/>phù hợp"))
+
+        UC03(("Phân công<br/>tài xế"))
+
+        UC04(("Xử lý từ chối<br/>hoặc timeout"))
+
+        UC05(("Xử lý không tìm<br/>được tài xế"))
+
+        UC06(("Theo dõi trạng thái<br/>chuyến"))
+
+        UC07(("Cập nhật trạng thái<br/>chuyến"))
+
+        UC08(("Cập nhật vị trí"))
+
+        UC09(("Tính cước<br/>chuyến"))
+
+        UC10(("Thanh toán"))
+
+        UC11(("Thanh toán<br/>điện tử"))
+
+        UC12(("Xử lý thanh toán<br/>thất bại"))
+
+        UC13(("Gửi thông báo"))
+
+        UC14(("Đánh giá tài xế"))
+
+    end
+
+    Customer --- UC01
+    Customer --- UC06
+    Customer --- UC10
+    Customer --- UC14
+
+    Driver --- UC03
+    Driver --- UC07
+    Driver --- UC08
+
+    Payment --- UC11
+
+    Notification --- UC13
+
+
+    UC01 -.->|<<include>>| UC02
+
+    UC02 -.->|<<include>>| UC03
+
+    UC04 -.->|<<extend>>| UC03
+
+    UC05 -.->|<<extend>>| UC03
+
+
+    UC10 -.->|<<include>>| UC09
+
+    UC11 -.->|<<extend>>| UC10
+
+    UC12 -.->|<<extend>>| UC11
+```
+
+### 7.2.5. Luồng nghiệp vụ tổng quát của Use Case trung tâm
+
+Quy trình bắt đầu khi **Khách hàng tạo yêu cầu đặt xe** bằng cách cung cấp điểm đón, điểm đến và loại xe.
+
+Sau khi yêu cầu được tiếp nhận, CAB System thực hiện chức năng **Tìm tài xế phù hợp** dựa trên vị trí và trạng thái sẵn sàng của tài xế. Sau đó, hệ thống thực hiện **Phân công tài xế** bằng cách gửi đề xuất chuyến đến tài xế phù hợp.
+
+Trong trường hợp tài xế **từ chối hoặc không phản hồi trong thời gian quy định**, Use Case **Xử lý từ chối hoặc timeout** được kích hoạt và hệ thống tiếp tục tìm tài xế khác. Nếu không tìm được tài xế phù hợp, Use Case **Xử lý không tìm được tài xế** được kích hoạt và khách hàng được thông báo.
+
+Khi tài xế chấp nhận chuyến, khách hàng có thể **Theo dõi trạng thái chuyến**, trong khi tài xế thực hiện **Cập nhật vị trí** và **Cập nhật trạng thái chuyến** theo từng giai đoạn của hành trình.
+
+Sau khi chuyến đi hoàn thành, hệ thống thực hiện **Tính cước chuyến** và khách hàng thực hiện **Thanh toán**. Nếu khách hàng lựa chọn phương thức thanh toán điện tử, hệ thống sẽ tương tác với **Cổng thanh toán bên ngoài**. Trường hợp giao dịch thất bại, Use Case **Xử lý thanh toán thất bại** được kích hoạt theo chính sách của hệ thống.
+
+Trong toàn bộ vòng đời chuyến đi, CAB System có thể kích hoạt chức năng **Gửi thông báo** tại các sự kiện quan trọng như tiếp nhận yêu cầu, tìm được tài xế, tài xế đến điểm đón, hoàn thành chuyến và kết quả thanh toán.
+
+Cuối cùng, sau khi chuyến đi hoàn thành, khách hàng có thể thực hiện Use Case **Đánh giá tài xế**.
+
+### 7.2.6. Ý nghĩa quan hệ `<<include>>` và `<<extend>>`
+
+| Quan hệ       | Ý nghĩa trong CAB System                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------- |
+| `<<include>>` | Một Use Case luôn cần thực hiện một Use Case khác như một phần bắt buộc của luồng nghiệp vụ |
+| `<<extend>>`  | Một Use Case chỉ được kích hoạt trong điều kiện hoặc tình huống cụ thể                      |
+
+Trong sơ đồ:
+
+* **Đặt xe** `<<include>>` **Tìm tài xế phù hợp** vì sau khi khách hàng gửi yêu cầu, hệ thống phải thực hiện quá trình tìm tài xế.
+* **Tìm tài xế phù hợp** `<<include>>` **Phân công tài xế** để gửi đề xuất chuyến cho tài xế được lựa chọn.
+* **Xử lý từ chối hoặc timeout** `<<extend>>` **Phân công tài xế** vì chỉ xảy ra khi tài xế không chấp nhận chuyến hoặc không phản hồi.
+* **Xử lý không tìm được tài xế** `<<extend>>` **Phân công tài xế** khi hệ thống không còn tài xế phù hợp.
+* **Thanh toán** `<<include>>` **Tính cước chuyến** vì hệ thống cần xác định số tiền cần thanh toán.
+* **Thanh toán điện tử** `<<extend>>` **Thanh toán** vì chỉ xảy ra khi khách hàng chọn phương thức thanh toán điện tử.
+* **Xử lý thanh toán thất bại** `<<extend>>` **Thanh toán điện tử** vì chỉ xảy ra khi giao dịch không thành công.
+
+### 7.2.7. Kết luận
+
+Use Case Diagram cho thấy CAB System được tổ chức xoay quanh nghiệp vụ cốt lõi **Đặt xe**. Từ Use Case này, hệ thống kích hoạt và phối hợp nhiều chức năng khác như tìm tài xế, phân công tài xế, quản lý trạng thái chuyến đi, tính cước, thanh toán và thông báo.
+
+Việc xác định Use Case trung tâm giúp làm rõ các nghiệp vụ có mức độ liên kết cao trong hệ thống. Đây cũng là cơ sở cho bước tiếp theo là phân tích chi tiết luồng xử lý và xác định ranh giới giữa các dịch vụ trong kiến trúc Service-Oriented Architecture/Microservices.
+
