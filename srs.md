@@ -273,3 +273,107 @@ Nói ngắn gọn: mục đích không phải là "làm ra một app đặt xe",
 | BR-35 | Hệ thống phải bảo vệ thông tin cá nhân, thông tin phương tiện, dữ liệu vị trí và dữ liệu giao dịch |
 | BR-36 | Hệ thống phải lưu vết (audit log) các thao tác quan trọng để phục vụ kiểm tra khi có sự cố |
 
+## Bước 6 – Phân rã yêu cầu chức năng (Functional Requirements)
+
+### 6.1. Module Quản lý tài khoản Khách hàng
+
+| Mã FR | Mô tả chức năng | BR gốc |
+|---|---|---|
+| FR-01.1 | Đăng ký tài khoản khách hàng (số điện thoại/email, xác thực OTP) | BR-01 |
+| FR-01.2 | Đăng nhập tài khoản khách hàng | BR-01 |
+| FR-01.3 | Cập nhật thông tin cá nhân (tên, ảnh đại diện, số điện thoại) | BR-02 |
+| FR-01.4 | Đổi mật khẩu / khôi phục mật khẩu | BR-01 |
+
+### 6.2. Module Quản lý tài khoản Tài xế
+
+| Mã FR | Mô tả chức năng | BR gốc |
+|---|---|---|
+| FR-02.1 | Tài xế tự đăng ký tài khoản (chờ duyệt) | BR-08 |
+| FR-02.2 | Nhân viên vận hành tạo tài khoản tài xế thay | BR-08 |
+| FR-02.3 | Cập nhật hồ sơ tài xế (thông tin cá nhân, giấy phép lái xe) | BR-09 |
+| FR-02.4 | Cập nhật thông tin phương tiện (biển số, loại xe, hình ảnh) | BR-09 |
+| FR-02.5 | Chuyển đổi trạng thái sẵn sàng nhận chuyến (online/offline) | BR-10 |
+
+### 6.3. Module Đặt xe & Theo dõi chuyến
+
+| Mã FR | Mô tả chức năng | BR gốc |
+|---|---|---|
+| FR-03.1 | Tạo yêu cầu đặt xe (điểm đón, điểm đến, loại xe) | BR-03 |
+| FR-03.2 | Hủy yêu cầu đặt xe (theo chính sách hủy — cần làm rõ ở BR chưa chốt) | BR-03 |
+| FR-03.3 | Hiển thị trạng thái "đang tìm tài xế" | BR-04 |
+| FR-03.4 | Hiển thị thông tin tài xế đã nhận chuyến (tên, biển số, ảnh, SĐT) | BR-04 |
+| FR-03.5 | Hiển thị thời gian dự kiến tài xế đến (ETA) | BR-04 |
+| FR-03.6 | Cập nhật trạng thái chuyến theo thời gian thực cho khách hàng | BR-04 |
+| FR-03.7 | Tài xế cập nhật trạng thái "đã đến điểm đón" | BR-12 |
+| FR-03.8 | Tài xế cập nhật trạng thái "đã đón khách / bắt đầu chuyến" | BR-12 |
+| FR-03.9 | Tài xế cập nhật trạng thái "đang di chuyển" | BR-12 |
+| FR-03.10 | Tài xế cập nhật trạng thái "hoàn thành chuyến" | BR-12 |
+| FR-03.11 | Khách hàng xem lịch sử chuyến đi | BR-05 |
+| FR-03.12 | Khách hàng đánh giá tài xế sau chuyến (điểm số + nhận xét) | BR-06 |
+
+### 6.4. Module Tìm & Phân công tài xế (Matching)
+
+| Mã FR | Mô tả chức năng | BR gốc |
+|---|---|---|
+| FR-04.1 | Xác định danh sách tài xế phù hợp theo bán kính vị trí + trạng thái sẵn sàng | BR-14 |
+| FR-04.2 | Sắp xếp/ưu tiên tài xế theo khoảng cách gần nhất & tiêu chí vận hành | BR-15 |
+| FR-04.3 | Gửi đề xuất chuyến đến tài xế theo thứ tự ưu tiên | BR-14, BR-16 |
+| FR-04.4 | Xử lý timeout khi tài xế không phản hồi → chuyển đề xuất cho tài xế kế tiếp | BR-16 |
+| FR-04.5 | Xử lý khi tài xế từ chối chuyến → tìm tài xế thay thế | BR-16 |
+| FR-04.6 | Thông báo khách hàng khi không tìm được tài xế sau khi đã thử hết danh sách | BR-07 |
+| FR-04.7 | Ghi nhận vị trí tài xế liên tục (định kỳ) để phục vụ matching & ETA | BR-13 |
+
+### 6.5. Module Thanh toán & Tính cước
+
+| Mã FR | Mô tả chức năng | BR gốc |
+|---|---|---|
+| FR-05.1 | Tính cước chuyến dựa trên loại dịch vụ + thông tin chuyến (cần làm rõ công thức) | BR-17 |
+| FR-05.2 | Ghi nhận thanh toán bằng tiền mặt | BR-18 |
+| FR-05.3 | Khởi tạo giao dịch thanh toán điện tử qua cổng thanh toán bên thứ ba | BR-18, BR-19 |
+| FR-05.4 | Nhận & xử lý kết quả giao dịch từ cổng thanh toán (callback/webhook) | BR-19 |
+| FR-05.5 | Thông báo & cho phép thử lại khi giao dịch thất bại | BR-20 |
+| FR-05.6 | Lưu lịch sử giao dịch (không lưu dữ liệu thẻ/tài khoản nhạy cảm) | BR-19 |
+
+### 6.6. Module Thông báo (Notification)
+
+| Mã FR | Mô tả chức năng | BR gốc |
+|---|---|---|
+| FR-06.1 | Gửi thông báo khách hàng khi yêu cầu đặt xe được tiếp nhận | BR-21 |
+| FR-06.2 | Gửi thông báo khách hàng khi có tài xế nhận chuyến | BR-21 |
+| FR-06.3 | Gửi thông báo khách hàng khi tài xế đến điểm đón | BR-21 |
+| FR-06.4 | Gửi thông báo khách hàng khi chuyến hoàn thành | BR-21 |
+| FR-06.5 | Gửi thông báo kết quả thanh toán cho khách hàng | BR-21 |
+| FR-06.6 | Gửi thông báo tài xế khi có chuyến mới phù hợp | BR-22 |
+| FR-06.7 | Gửi thông báo tài xế khi có thay đổi liên quan chuyến đang thực hiện | BR-22 |
+| FR-06.8 | Kiến trúc cho phép thêm kênh thông báo mới không ảnh hưởng hệ thống hiện tại | BR-23 |
+
+### 6.7. Module Quản trị & Vận hành (Admin/Operations)
+
+| Mã FR | Mô tả chức năng | BR gốc |
+|---|---|---|
+| FR-07.1 | Xem danh sách & chi tiết khách hàng | BR-24 |
+| FR-07.2 | Xem danh sách & chi tiết tài xế, duyệt tài khoản tài xế mới | BR-24 |
+| FR-07.3 | Quản lý thông tin phương tiện | BR-24 |
+| FR-07.4 | Xem danh sách chuyến đang diễn ra (dashboard thời gian thực) | BR-25 |
+| FR-07.5 | Xem trạng thái tài xế (đang chạy/sẵn sàng/offline) | BR-25 |
+| FR-07.6 | Hỗ trợ xử lý chuyến bị lỗi (can thiệp thủ công, hủy/chuyển tài xế) | BR-26 |
+| FR-07.7 | Tra cứu lịch sử giao dịch thanh toán | BR-26 |
+| FR-07.8 | Phân quyền chức năng quản trị theo vai trò (role-based access) | BR-27 |
+
+### 6.8. Module Báo cáo (Reporting)
+
+| Mã FR | Mô tả chức năng | BR gốc |
+|---|---|---|
+| FR-08.1 | Báo cáo số lượng chuyến theo thời gian (ngày/tuần/tháng) | BR-28 |
+| FR-08.2 | Báo cáo doanh thu | BR-28 |
+| FR-08.3 | Báo cáo tỷ lệ chuyến hoàn thành | BR-28 |
+| FR-08.4 | Báo cáo tỷ lệ hủy chuyến | BR-28 |
+| FR-08.5 | Báo cáo hiệu quả hoạt động của tài xế (số chuyến, đánh giá trung bình) | BR-28 |
+
+---
+
+**Ghi chú:**
+- 8 module trên (6.1 → 6.8) chính là các nhóm chức năng có khả năng **tách thành microservice riêng** ở bước thiết kế kiến trúc sau này (User Service, Trip Service, Matching Service, Payment Service, Notification Service, Admin Service, Reporting Service).
+- Các FR liên quan đến BR "chưa chốt" (FR-03.2, FR-05.1) mình có ghi chú lại — cần chờ làm rõ trước khi viết đặc tả chi tiết (input/output cụ thể) cho các FR này.
+- Các BR-29 → BR-36 (phi chức năng) **không** phân rã thành FR ở bước này vì chúng là **Non-Functional Requirements**, sẽ được xử lý riêng ở bước đặc tả yêu cầu phi chức năng (NFR) — không lẫn vào phân rã FR để giữ đúng bản chất hai loại yêu cầu.
+
