@@ -1367,3 +1367,1145 @@ Các Use Case trên mô tả các nghiệp vụ chính của CAB System từ khi
 Đặc tả được xây dựng theo hướng tách biệt trách nhiệm giữa các tác nhân và hệ thống. Các thành phần bên ngoài như **Payment Gateway** và **Notification Provider** được xem là actor phụ vì có tương tác trực tiếp với CAB System.
 
 Các quy tắc nghiệp vụ chưa được doanh nghiệp xác định cụ thể được giữ ở mức khái quát. Những nội dung như công thức tính cước, tiêu chí ưu tiên tài xế, thời gian timeout và chính sách hủy chuyến sẽ được cập nhật khi có yêu cầu nghiệp vụ chính thức.
+
+
+# BƯỚC 9 – PHÂN TÍCH QUY TRÌNH NGHIỆP VỤ (BUSINESS PROCESS ANALYSIS)
+
+## 9.1. Mục tiêu phân tích
+
+Phân tích quy trình nghiệp vụ nhằm mô tả cách CAB System xử lý một yêu cầu đặt xe từ khi khách hàng bắt đầu đặt xe cho đến khi chuyến đi hoàn thành, thanh toán và đánh giá tài xế.
+
+Quy trình được phân tích dựa trên các Use Case đã xác định ở Bước 8, qua đó làm rõ:
+
+* Các tác nhân tham gia vào quy trình.
+* Trình tự thực hiện các hoạt động nghiệp vụ.
+* Các điểm quyết định và nhánh xử lý.
+* Sự tương tác giữa khách hàng, tài xế, CAB System và các hệ thống bên ngoài.
+* Các trường hợp ngoại lệ như tài xế từ chối, không phản hồi, không tìm được tài xế hoặc thanh toán thất bại.
+* Các dữ liệu và trạng thái được tạo hoặc cập nhật trong quá trình xử lý.
+
+---
+
+# 9.2. Quy trình nghiệp vụ tổng quát
+
+Quy trình đặt xe của CAB System được mô tả theo các giai đoạn chính:
+
+```text
+Khách hàng
+    │
+    ▼
+[1. Tạo yêu cầu đặt xe]
+    │
+    ▼
+[2. Kiểm tra thông tin]
+    │
+    ├── Không hợp lệ ──► [Thông báo lỗi]
+    │
+    ▼
+[3. Tìm tài xế phù hợp]
+    │
+    ▼
+[4. Phân công tài xế]
+    │
+    ├── Từ chối/không phản hồi
+    │          │
+    │          ▼
+    │   [Tìm tài xế khác]
+    │          │
+    │          ▼
+    │   [Phân công lại]
+    │
+    ├── Không tìm được
+    │          │
+    │          ▼
+    │   [Thông báo khách hàng]
+    │
+    ▼
+[5. Tài xế nhận chuyến]
+    │
+    ▼
+[6. Tài xế đến điểm đón]
+    │
+    ▼
+[7. Đón khách & bắt đầu chuyến]
+    │
+    ▼
+[8. Thực hiện chuyến]
+    │
+    ▼
+[9. Hoàn thành chuyến]
+    │
+    ▼
+[10. Tính cước]
+    │
+    ▼
+[11. Thanh toán]
+    │
+    ├── Điện tử ──► Payment Gateway
+    │                    │
+    │                    ▼
+    │             [Nhận kết quả]
+    │
+    └── Tiền mặt
+    │
+    ▼
+[12. Gửi kết quả thanh toán]
+    │
+    ▼
+[13. Khách hàng đánh giá tài xế]
+    │
+    ▼
+[Kết thúc quy trình]
+```
+
+---
+
+# 9.3. Phân tích các bên tham gia quy trình
+
+| **Lane / Actor**          | **Vai trò trong quy trình**                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Khách hàng**            | Tạo yêu cầu đặt xe, theo dõi chuyến, lựa chọn phương thức thanh toán và đánh giá tài xế.                                  |
+| **CAB System**            | Kiểm tra yêu cầu, tìm và phân công tài xế, quản lý trạng thái chuyến, tính cước, xử lý thanh toán và điều phối thông báo. |
+| **Tài xế**                | Nhận hoặc từ chối chuyến, cập nhật trạng thái và thực hiện chuyến.                                                        |
+| **Payment Gateway**       | Xử lý giao dịch thanh toán điện tử và trả kết quả giao dịch cho CAB System.                                               |
+| **Notification Provider** | Hỗ trợ gửi thông báo đến khách hàng hoặc tài xế.                                                                          |
+
+---
+
+# 9.4. Quy trình nghiệp vụ chi tiết
+
+## Bước 1 – Khách hàng tạo yêu cầu đặt xe
+
+Khách hàng đăng nhập vào CAB System và nhập các thông tin cần thiết cho chuyến đi:
+
+* Điểm đón.
+* Điểm đến.
+* Loại xe/dịch vụ.
+
+Sau khi xác nhận, CAB System tiếp nhận yêu cầu và tạo một yêu cầu đặt xe mới.
+
+**Kết quả:** Yêu cầu được tạo với trạng thái đang tìm tài xế.
+
+---
+
+## Bước 2 – Kiểm tra yêu cầu
+
+CAB System kiểm tra các thông tin được cung cấp.
+
+### Nếu thông tin hợp lệ
+
+Hệ thống tiếp tục quá trình tìm tài xế.
+
+### Nếu thông tin không hợp lệ
+
+Hệ thống thông báo lỗi và yêu cầu khách hàng điều chỉnh thông tin.
+
+```text
+Yêu cầu đặt xe
+      │
+      ▼
+[Kiểm tra thông tin]
+      │
+      ├── Không hợp lệ ──► Thông báo lỗi ──► Nhập lại
+      │
+      └── Hợp lệ
+             │
+             ▼
+       Tìm tài xế
+```
+
+---
+
+# 9.5. Tìm và phân công tài xế
+
+Sau khi yêu cầu được xác nhận, CAB System tìm các tài xế phù hợp.
+
+Hệ thống dựa trên các thông tin nghiệp vụ như:
+
+* Trạng thái sẵn sàng của tài xế.
+* Vị trí hiện tại của tài xế.
+* Loại xe/dịch vụ phù hợp.
+* Các tiêu chí nghiệp vụ được cấu hình.
+
+Danh sách tài xế phù hợp được sắp xếp theo mức độ phù hợp và hệ thống lần lượt gửi đề nghị nhận chuyến.
+
+### Trường hợp tài xế chấp nhận
+
+Hệ thống ghi nhận tài xế và cập nhật chuyến sang trạng thái đã phân công.
+
+### Trường hợp tài xế từ chối
+
+Hệ thống chuyển sang tài xế phù hợp tiếp theo.
+
+### Trường hợp tài xế không phản hồi
+
+Hệ thống xác định yêu cầu không được phản hồi theo thời gian cấu hình và chuyển sang tài xế tiếp theo.
+
+### Trường hợp không còn tài xế phù hợp
+
+Hệ thống cập nhật trạng thái yêu cầu và thông báo cho khách hàng.
+
+> Thời gian timeout và tiêu chí ưu tiên tài xế cụ thể chưa được xác định trong yêu cầu nghiệp vụ hiện tại.
+
+---
+
+# 9.6. Tài xế nhận và thực hiện chuyến
+
+Khi tài xế chấp nhận chuyến, CAB System gửi thông tin chuyến cho khách hàng.
+
+Tài xế thực hiện các hoạt động theo trình tự:
+
+```text
+Đã phân công
+      │
+      ▼
+Tài xế đang đến
+      │
+      ▼
+Tài xế đã đến điểm đón
+      │
+      ▼
+Đã đón khách
+      │
+      ▼
+Đang thực hiện chuyến
+      │
+      ▼
+Hoàn thành
+```
+
+Trong quá trình thực hiện, tài xế cập nhật trạng thái chuyến và vị trí của mình. CAB System ghi nhận các thay đổi và cung cấp thông tin cho khách hàng.
+
+---
+
+# 9.7. Theo dõi chuyến
+
+Trong thời gian tài xế di chuyển đến điểm đón và thực hiện chuyến, khách hàng có thể theo dõi:
+
+* Trạng thái hiện tại của chuyến.
+* Thông tin tài xế.
+* Thông tin phương tiện.
+* Vị trí tài xế khi có dữ liệu.
+* Tiến trình của chuyến.
+
+CAB System cập nhật thông tin khi nhận được dữ liệu mới từ tài xế.
+
+Nếu dữ liệu vị trí tạm thời không được cập nhật, hệ thống có thể sử dụng thông tin vị trí gần nhất và tiếp tục cập nhật khi có dữ liệu mới.
+
+---
+
+# 9.8. Hoàn thành chuyến và tính cước
+
+Khi tài xế cập nhật trạng thái hoàn thành, CAB System ghi nhận chuyến đã kết thúc.
+
+Sau đó hệ thống xác định số tiền khách hàng cần thanh toán dựa trên:
+
+* Thông tin loại dịch vụ.
+* Thông tin chuyến đi.
+* Các quy tắc tính cước được hệ thống cấu hình.
+
+```text
+Chuyến hoàn thành
+       │
+       ▼
+[Thu thập thông tin chuyến]
+       │
+       ▼
+[Tính số tiền]
+       │
+       ▼
+[Hiển thị số tiền cần thanh toán]
+```
+
+> Công thức tính cước chi tiết chưa được xác định trong phạm vi yêu cầu hiện tại.
+
+---
+
+# 9.9. Thanh toán
+
+Khách hàng lựa chọn phương thức thanh toán.
+
+CAB System hỗ trợ hai nhóm phương thức:
+
+### Thanh toán tiền mặt
+
+1. Hệ thống ghi nhận phương thức thanh toán tiền mặt.
+2. Hệ thống cập nhật trạng thái thanh toán theo kết quả xác nhận.
+3. Quy trình tiếp tục sang bước thông báo kết quả.
+
+### Thanh toán điện tử
+
+1. Khách hàng chọn thanh toán điện tử.
+2. CAB System gửi yêu cầu thanh toán đến Payment Gateway.
+3. Payment Gateway xử lý giao dịch.
+4. Payment Gateway gửi kết quả về CAB System.
+5. CAB System cập nhật trạng thái giao dịch.
+6. Hệ thống thông báo kết quả cho khách hàng.
+
+```text
+             [Thanh toán]
+                  │
+          ┌───────┴────────┐
+          ▼                ▼
+    [Tiền mặt]       [Điện tử]
+          │                │
+          │                ▼
+          │       [Payment Gateway]
+          │                │
+          │                ▼
+          │        [Kết quả giao dịch]
+          │                │
+          └───────┬────────┘
+                  ▼
+        [Cập nhật trạng thái]
+```
+
+### Thanh toán điện tử thất bại
+
+Nếu giao dịch điện tử thất bại:
+
+1. Payment Gateway trả kết quả thất bại.
+2. CAB System ghi nhận trạng thái thất bại.
+3. Hệ thống thông báo cho khách hàng.
+4. Hệ thống cho phép xử lý lại theo chính sách thanh toán được cấu hình.
+
+CAB System không lưu trữ thông tin nhạy cảm của thẻ hoặc tài khoản ngân hàng.
+
+---
+
+# 9.10. Gửi thông báo
+
+Thông báo được thực hiện tại các điểm quan trọng trong quy trình.
+
+### Đối với khách hàng
+
+* Yêu cầu đặt xe được tiếp nhận.
+* Đã phân công tài xế.
+* Tài xế đã đến.
+* Chuyến hoàn thành.
+* Thanh toán thành công hoặc thất bại.
+* Không tìm được tài xế.
+
+### Đối với tài xế
+
+* Có yêu cầu chuyến phù hợp.
+* Thông tin chuyến thay đổi.
+* Các sự kiện liên quan đến chuyến.
+
+Việc gửi thông báo được thực hiện thông qua hệ thống Notification Provider khi cần sử dụng dịch vụ bên ngoài.
+
+---
+
+# 9.11. Đánh giá tài xế
+
+Sau khi chuyến hoàn thành, khách hàng có thể đánh giá tài xế.
+
+Quy trình:
+
+```text
+Chuyến hoàn thành
+       │
+       ▼
+[Khách hàng mở chuyến]
+       │
+       ▼
+[Nhập đánh giá]
+       │
+       ▼
+[Hệ thống kiểm tra]
+       │
+       ├── Không hợp lệ ──► Thông báo lỗi
+       │
+       └── Hợp lệ
+              │
+              ▼
+       [Lưu đánh giá]
+              │
+              ▼
+        [Kết thúc]
+```
+
+Đánh giá được liên kết với chuyến đi và tài xế tương ứng để phục vụ việc theo dõi chất lượng dịch vụ.
+
+---
+
+# 9.12. Phân tích các điểm quyết định trong quy trình
+
+| **Điểm quyết định** | **Điều kiện**                     | **Nhánh xử lý**                                         |
+| ------------------- | --------------------------------- | ------------------------------------------------------- |
+| Kiểm tra yêu cầu    | Thông tin đặt xe có hợp lệ không? | Hợp lệ → tìm tài xế; không hợp lệ → yêu cầu nhập lại    |
+| Tìm tài xế          | Có tài xế phù hợp không?          | Có → phân công; không → thông báo khách hàng            |
+| Phản hồi tài xế     | Tài xế chấp nhận không?           | Chấp nhận → xác nhận; từ chối/timeout → tìm tài xế khác |
+| Thanh toán          | Phương thức nào được chọn?        | Tiền mặt → ghi nhận; điện tử → Payment Gateway          |
+| Thanh toán điện tử  | Giao dịch thành công không?       | Thành công → hoàn tất; thất bại → thông báo/xử lý lại   |
+| Đánh giá            | Chuyến đã hoàn thành chưa?        | Có → cho phép đánh giá; chưa → không cho đánh giá       |
+
+---
+
+# 9.13. Business Process Model
+
+Quy trình nghiệp vụ có thể được biểu diễn dưới dạng các Swimlane như sau:
+
+```mermaid
+flowchart LR
+
+    A["Khách hàng"]
+    B["CAB System"]
+    C["Tài xế"]
+    D["Payment Gateway"]
+    E["Notification Provider"]
+
+    A1["Nhập thông tin đặt xe"]
+    A2["Xác nhận đặt xe"]
+    A3["Theo dõi chuyến"]
+    A4["Chọn phương thức thanh toán"]
+    A5["Đánh giá tài xế"]
+
+    B1["Kiểm tra yêu cầu"]
+    B2["Tạo yêu cầu đặt xe"]
+    B3["Tìm tài xế phù hợp"]
+    B4["Phân công tài xế"]
+    B5["Cập nhật trạng thái chuyến"]
+    B6["Tính cước"]
+    B7["Cập nhật thanh toán"]
+    B8["Gửi thông báo"]
+
+    C1["Nhận yêu cầu"]
+    C2{"Chấp nhận?"}
+    C3["Đến điểm đón"]
+    C4["Đón khách"]
+    C5["Thực hiện chuyến"]
+    C6["Hoàn thành chuyến"]
+
+    D1["Xử lý giao dịch"]
+    D2["Trả kết quả"]
+
+    E1["Gửi thông báo"]
+
+    A --> A1
+    A1 --> A2
+    A2 --> B1
+    B1 --> B2
+    B2 --> B3
+    B3 --> B4
+    B4 --> C1
+    C1 --> C2
+
+    C2 -->|Có| C3
+    C2 -->|Không| B3
+
+    C3 --> C4
+    C4 --> C5
+    C5 --> C6
+    C6 --> B5
+    B5 --> B6
+    B6 --> A3
+    A3 --> A4
+
+    A4 -->|Tiền mặt| B7
+    A4 -->|Điện tử| D1
+    D1 --> D2
+    D2 --> B7
+
+    B7 --> B8
+    B8 --> E1
+    E1 --> A5
+```
+
+---
+
+# 9.14. Phân tích đầu vào và đầu ra của quy trình
+
+| **Giai đoạn**    | **Đầu vào**                              | **Xử lý**                     | **Đầu ra**               |
+| ---------------- | ---------------------------------------- | ----------------------------- | ------------------------ |
+| Đặt xe           | Điểm đón, điểm đến, loại xe              | Kiểm tra và tạo yêu cầu       | Yêu cầu đặt xe           |
+| Tìm tài xế       | Yêu cầu đặt xe, trạng thái/vị trí tài xế | Lọc và lựa chọn tài xế        | Danh sách tài xế phù hợp |
+| Phân công        | Danh sách tài xế                         | Gửi đề nghị và xử lý phản hồi | Tài xế được phân công    |
+| Thực hiện chuyến | Thông tin chuyến                         | Cập nhật trạng thái/vị trí    | Trạng thái chuyến        |
+| Tính cước        | Thông tin chuyến, loại dịch vụ           | Xác định số tiền              | Số tiền phải thanh toán  |
+| Thanh toán       | Số tiền, phương thức thanh toán          | Xử lý giao dịch               | Trạng thái thanh toán    |
+| Thông báo        | Sự kiện nghiệp vụ                        | Xác định người nhận/kênh gửi  | Thông báo                |
+| Đánh giá         | Mã chuyến, đánh giá                      | Kiểm tra và lưu               | Đánh giá tài xế          |
+
+---
+
+# 9.15. Các trạng thái chính của chuyến
+
+Trạng thái chuyến được quản lý xuyên suốt quy trình:
+
+```text
+Đang tìm tài xế
+       │
+       ▼
+Đã phân công
+       │
+       ▼
+Tài xế đang đến
+       │
+       ▼
+Tài xế đã đến
+       │
+       ▼
+Đã đón khách
+       │
+       ▼
+Đang thực hiện chuyến
+       │
+       ▼
+Hoàn thành
+```
+
+Trong trường hợp không tìm được tài xế, yêu cầu có thể chuyển sang trạng thái thể hiện việc không thể phân công.
+
+Các trạng thái hủy chuyến và điều kiện chuyển trạng thái chi tiết cần được xác định khi chính sách hủy của doanh nghiệp được chốt.
+
+---
+
+# 9.16. Các vấn đề nghiệp vụ cần tiếp tục xác định
+
+Qua phân tích quy trình, một số quy tắc nghiệp vụ cần được xác định cụ thể trước khi triển khai chi tiết:
+
+| **STT** | **Nội dung cần xác định**      | **Ảnh hưởng**                   |
+| ------- | ------------------------------ | ------------------------------- |
+| 1       | Công thức tính cước            | Quy trình tính tiền             |
+| 2       | Tiêu chí ưu tiên tài xế        | Quy trình tìm và phân công      |
+| 3       | Thời gian tài xế được phản hồi | Xử lý timeout                   |
+| 4       | Chính sách hủy chuyến          | Trạng thái và luồng ngoại lệ    |
+| 5       | Xử lý khi mất kết nối          | Theo dõi và cập nhật trạng thái |
+| 6       | Chính sách retry thanh toán    | Xử lý thanh toán thất bại       |
+| 7       | Thời gian lưu trữ dữ liệu      | Quản lý dữ liệu và audit        |
+
+Các nội dung trên không được tự đặt giá trị trong giai đoạn phân tích vì cần có xác nhận từ phía nghiệp vụ.
+
+---
+
+# 9.17. Kết quả phân tích
+
+Qua phân tích Business Process, quy trình đặt xe của CAB System được xác định là một quy trình xuyên suốt gồm các giai đoạn:
+
+**Tạo yêu cầu → Kiểm tra → Tìm tài xế → Phân công → Thực hiện chuyến → Theo dõi → Hoàn thành → Tính cước → Thanh toán → Thông báo → Đánh giá.**
+
+Quy trình có sự tương tác giữa nhiều tác nhân và hệ thống bên ngoài, đặc biệt là **Payment Gateway** và **Notification Provider**. Các điểm quyết định chính tập trung ở việc kiểm tra yêu cầu, lựa chọn tài xế và xử lý thanh toán.
+
+Kết quả phân tích này là cơ sở để chuyển sang các bước tiếp theo như xác định dữ liệu nghiệp vụ, phân tích các thành phần hệ thống và xác định ranh giới dịch vụ trong kiến trúc SOA/Microservices của CAB System.
+
+# BƯỚC 10 – PHÂN TÍCH CÁC QUY TẮC NGHIỆP VỤ
+
+## 10.1. Mục tiêu
+
+Phân tích các quy tắc nghiệp vụ nhằm xác định những điều kiện, ràng buộc và nguyên tắc mà CAB System phải tuân thủ trong quá trình xử lý nghiệp vụ.
+
+Các quy tắc nghiệp vụ được xây dựng dựa trên:
+
+* Business Requirements ở Bước 5.
+* Functional Requirements ở Bước 6.
+* Use Case ở Bước 8.
+* Business Process ở Bước 9.
+
+Việc xác định rõ các quy tắc nghiệp vụ giúp đảm bảo hệ thống xử lý thống nhất, hạn chế sai sót và tạo cơ sở cho việc thiết kế dữ liệu, chức năng và kiến trúc dịch vụ ở các bước tiếp theo.
+
+---
+
+# 10.2. Phân loại quy tắc nghiệp vụ
+
+Các quy tắc nghiệp vụ của CAB System được chia thành các nhóm:
+
+| **Nhóm** | **Nội dung**                         |
+| -------- | ------------------------------------ |
+| BR-ACC   | Quy tắc tài khoản và xác thực        |
+| BR-BOOK  | Quy tắc đặt xe                       |
+| BR-MATCH | Quy tắc tìm và phân công tài xế      |
+| BR-TRIP  | Quy tắc thực hiện chuyến             |
+| BR-FARE  | Quy tắc tính cước                    |
+| BR-PAY   | Quy tắc thanh toán                   |
+| BR-NOTI  | Quy tắc thông báo                    |
+| BR-RATE  | Quy tắc đánh giá                     |
+| BR-ADMIN | Quy tắc quản trị và vận hành         |
+| BR-SEC   | Quy tắc bảo mật và kiểm soát dữ liệu |
+
+---
+
+# 10.3. Quy tắc tài khoản và xác thực
+
+### BR-ACC-01 – Khách hàng phải xác thực tài khoản
+
+Khách hàng phải đăng nhập thành công trước khi thực hiện các chức năng yêu cầu xác thực như đặt xe, xem chuyến và đánh giá tài xế.
+
+**Điều kiện:**
+
+```text
+Nếu Customer chưa đăng nhập
+→ Không cho phép thực hiện chức năng yêu cầu xác thực.
+```
+
+---
+
+### BR-ACC-02 – Thông tin đăng ký phải hợp lệ
+
+Thông tin đăng ký tài khoản phải đáp ứng các điều kiện hợp lệ do hệ thống quy định.
+
+Nếu thông tin không hợp lệ, hệ thống không tạo tài khoản và yêu cầu người dùng điều chỉnh.
+
+---
+
+### BR-ACC-03 – Tài xế phải được xác nhận trước khi nhận chuyến
+
+Tài xế đăng ký mới phải ở trạng thái chờ xác nhận/phê duyệt trước khi được tham gia nhận chuyến.
+
+```text
+Tài xế đăng ký
+      │
+      ▼
+Chờ phê duyệt
+      │
+      ├── Được phê duyệt ──► Có thể hoạt động
+      │
+      └── Chưa được phê duyệt ──► Không nhận chuyến
+```
+
+---
+
+### BR-ACC-04 – Phân quyền theo vai trò
+
+Hệ thống phải kiểm soát quyền truy cập dựa trên vai trò của người dùng.
+
+Các nhóm chính gồm:
+
+* Khách hàng.
+* Tài xế.
+* Operator/Admin.
+
+Người dùng chỉ được thực hiện những chức năng mà vai trò của mình được phép.
+
+---
+
+# 10.4. Quy tắc đặt xe
+
+### BR-BOOK-01 – Yêu cầu đặt xe phải có thông tin bắt buộc
+
+Một yêu cầu đặt xe phải có tối thiểu:
+
+* Điểm đón.
+* Điểm đến.
+* Loại xe/dịch vụ.
+
+Nếu thiếu hoặc không hợp lệ, hệ thống không tạo yêu cầu.
+
+---
+
+### BR-BOOK-02 – Chỉ yêu cầu hợp lệ mới được tìm tài xế
+
+CAB System chỉ thực hiện tìm tài xế sau khi yêu cầu đặt xe đã được kiểm tra và xác nhận hợp lệ.
+
+```text
+Yêu cầu đặt xe
+      │
+      ▼
+Kiểm tra
+      │
+      ├── Không hợp lệ → Từ chối
+      │
+      └── Hợp lệ → Tìm tài xế
+```
+
+---
+
+### BR-BOOK-03 – Mỗi yêu cầu phải có trạng thái
+
+Mỗi yêu cầu/chuyến phải có trạng thái để hệ thống và người dùng theo dõi quá trình xử lý.
+
+Các trạng thái chính gồm:
+
+* Đang tìm tài xế.
+* Đã phân công.
+* Tài xế đang đến.
+* Tài xế đã đến.
+* Đã đón khách.
+* Đang thực hiện chuyến.
+* Hoàn thành.
+
+Các trạng thái hủy và điều kiện chuyển sang trạng thái hủy sẽ được bổ sung sau khi chính sách hủy chuyến được xác định.
+
+---
+
+### BR-BOOK-04 – Chỉ khách hàng có quyền mới được xem chuyến
+
+Khách hàng chỉ được xem thông tin những chuyến thuộc tài khoản của mình.
+
+---
+
+# 10.5. Quy tắc tìm và phân công tài xế
+
+### BR-MATCH-01 – Chỉ tài xế sẵn sàng mới được xem xét
+
+Hệ thống chỉ đưa tài xế đang ở trạng thái sẵn sàng phục vụ vào quá trình tìm kiếm.
+
+```text
+Tài xế
+  │
+  ├── Offline → Không xét
+  │
+  └── Sẵn sàng → Có thể xét
+```
+
+---
+
+### BR-MATCH-02 – Tài xế phải phù hợp với yêu cầu chuyến
+
+Tài xế được xem xét phải đáp ứng các tiêu chí phù hợp với yêu cầu đặt xe, bao gồm thông tin vị trí, trạng thái và loại xe/dịch vụ.
+
+---
+
+### BR-MATCH-03 – Tài xế phù hợp được ưu tiên
+
+CAB System phải có cơ chế xác định mức độ phù hợp của tài xế để lựa chọn tài xế cho yêu cầu đặt xe.
+
+Các yếu tố dự kiến gồm:
+
+* Vị trí tài xế.
+* Trạng thái sẵn sàng.
+* Loại xe/dịch vụ.
+* Các tiêu chí nghiệp vụ khác được cấu hình.
+
+> Tiêu chí ưu tiên cụ thể và trọng số của từng tiêu chí chưa được xác định trong yêu cầu hiện tại.
+
+---
+
+### BR-MATCH-04 – Tài xế từ chối thì chuyển sang tài xế khác
+
+Nếu tài xế từ chối yêu cầu, hệ thống không tiếp tục giữ yêu cầu đó cho tài xế và phải chuyển sang tài xế phù hợp tiếp theo.
+
+---
+
+### BR-MATCH-05 – Tài xế không phản hồi thì chuyển sang tài xế khác
+
+Nếu tài xế không phản hồi trong khoảng thời gian được hệ thống cấu hình, hệ thống chuyển sang tài xế phù hợp tiếp theo.
+
+> Giá trị timeout cụ thể chưa được xác định.
+
+---
+
+### BR-MATCH-06 – Không tìm được tài xế phải thông báo
+
+Nếu hệ thống không còn tài xế phù hợp, yêu cầu đặt xe phải được cập nhật trạng thái tương ứng và khách hàng phải được thông báo.
+
+---
+
+# 10.6. Quy tắc thực hiện chuyến
+
+### BR-TRIP-01 – Chỉ tài xế được phân công mới được cập nhật chuyến
+
+Tài xế chỉ được cập nhật trạng thái đối với chuyến mà mình được hệ thống phân công.
+
+---
+
+### BR-TRIP-02 – Trạng thái chuyến phải tuân theo trình tự
+
+Trạng thái chuyến phải được cập nhật theo trình tự nghiệp vụ hợp lệ.
+
+Ví dụ:
+
+```text
+Đã phân công
+      ↓
+Tài xế đang đến
+      ↓
+Tài xế đã đến
+      ↓
+Đã đón khách
+      ↓
+Đang thực hiện chuyến
+      ↓
+Hoàn thành
+```
+
+Hệ thống không cho phép chuyển trực tiếp sang trạng thái không phù hợp với trạng thái hiện tại.
+
+---
+
+### BR-TRIP-03 – Thay đổi trạng thái phải được ghi nhận
+
+Mỗi thay đổi trạng thái quan trọng của chuyến phải được hệ thống ghi nhận, bao gồm:
+
+* Chuyến liên quan.
+* Trạng thái mới.
+* Thời điểm cập nhật.
+* Tài xế thực hiện cập nhật.
+
+Thông tin này phục vụ việc theo dõi và kiểm tra lịch sử.
+
+---
+
+### BR-TRIP-04 – Vị trí tài xế được cập nhật trong quá trình hoạt động
+
+Trong thời gian tài xế hoạt động và thực hiện chuyến, hệ thống có khả năng tiếp nhận và cập nhật thông tin vị trí để phục vụ theo dõi chuyến.
+
+---
+
+# 10.7. Quy tắc tính cước
+
+### BR-FARE-01 – Chuyến phải có thông tin cần thiết để tính cước
+
+Hệ thống chỉ thực hiện tính cước khi có đủ thông tin cần thiết của chuyến theo quy tắc tính cước được cấu hình.
+
+---
+
+### BR-FARE-02 – Số tiền phải thanh toán được xác định sau chuyến
+
+Khi chuyến đạt điều kiện hoàn thành, CAB System xác định số tiền khách hàng cần thanh toán dựa trên thông tin chuyến và loại dịch vụ.
+
+```text
+Thông tin chuyến
+      +
+Loại dịch vụ
+      │
+      ▼
+[Tính cước]
+      │
+      ▼
+[Số tiền phải thanh toán]
+```
+
+---
+
+### BR-FARE-03 – Công thức tính cước phải được cấu hình
+
+Công thức tính cước phải được xác định và cấu hình theo chính sách nghiệp vụ của doanh nghiệp.
+
+> Công thức cụ thể chưa được xác định trong phạm vi yêu cầu hiện tại nên không đặt giá trị giả định trong hệ thống.
+
+---
+
+# 10.8. Quy tắc thanh toán
+
+### BR-PAY-01 – Hỗ trợ tiền mặt và thanh toán điện tử
+
+CAB System hỗ trợ tối thiểu hai phương thức:
+
+* Tiền mặt.
+* Thanh toán điện tử.
+
+---
+
+### BR-PAY-02 – Thanh toán điện tử phải thông qua Payment Gateway
+
+Đối với thanh toán điện tử, CAB System gửi yêu cầu đến Payment Gateway để xử lý giao dịch.
+
+CAB System không trực tiếp xử lý thông tin nhạy cảm của thẻ hoặc tài khoản ngân hàng.
+
+---
+
+### BR-PAY-03 – Phải ghi nhận trạng thái giao dịch
+
+Mỗi giao dịch thanh toán phải có trạng thái để xác định kết quả xử lý.
+
+Ví dụ:
+
+* Chờ xử lý.
+* Thành công.
+* Thất bại.
+
+---
+
+### BR-PAY-04 – Kết quả thanh toán điện tử phải được xác nhận
+
+CAB System phải nhận và xử lý kết quả từ Payment Gateway thông qua cơ chế callback/webhook hoặc cơ chế tích hợp được thống nhất.
+
+---
+
+### BR-PAY-05 – Thanh toán thất bại phải được xử lý
+
+Khi thanh toán điện tử thất bại:
+
+1. Hệ thống ghi nhận trạng thái thất bại.
+2. Hệ thống thông báo cho khách hàng.
+3. Hệ thống cho phép xử lý lại theo chính sách thanh toán được cấu hình.
+
+---
+
+### BR-PAY-06 – Không lưu thông tin thanh toán nhạy cảm
+
+CAB System không lưu trữ thông tin nhạy cảm như thông tin đầy đủ của thẻ hoặc tài khoản ngân hàng.
+
+Hệ thống chỉ lưu những thông tin giao dịch cần thiết để tra cứu và đối soát.
+
+---
+
+# 10.9. Quy tắc thông báo
+
+### BR-NOTI-01 – Các sự kiện quan trọng phải có thông báo
+
+CAB System phải hỗ trợ thông báo khi xảy ra các sự kiện quan trọng trong vòng đời chuyến.
+
+Đối với khách hàng:
+
+* Yêu cầu được tiếp nhận.
+* Tài xế được phân công.
+* Tài xế đã đến.
+* Chuyến hoàn thành.
+* Thanh toán thành công/thất bại.
+* Không tìm được tài xế.
+
+Đối với tài xế:
+
+* Có yêu cầu chuyến phù hợp.
+* Thông tin chuyến thay đổi.
+* Các sự kiện liên quan đến chuyến.
+
+---
+
+### BR-NOTI-02 – Thông báo phải gửi đúng đối tượng
+
+Thông báo phải được gửi đến đúng khách hàng hoặc tài xế có liên quan đến sự kiện.
+
+---
+
+### BR-NOTI-03 – Có khả năng mở rộng kênh thông báo
+
+Hệ thống phải được thiết kế để có thể mở rộng thêm các kênh thông báo như:
+
+* Push Notification.
+* SMS.
+* Email.
+
+Việc triển khai thực tế có thể bắt đầu với một hoặc một số kênh được doanh nghiệp lựa chọn.
+
+---
+
+### BR-NOTI-04 – Lỗi Notification Provider không làm dừng nghiệp vụ chính
+
+Nếu dịch vụ thông báo gặp lỗi, CAB System phải ghi nhận trạng thái lỗi và xử lý phù hợp mà không làm toàn bộ quy trình đặt xe hoặc chuyến đi bị dừng.
+
+---
+
+# 10.10. Quy tắc đánh giá tài xế
+
+### BR-RATE-01 – Chỉ chuyến hoàn thành mới được đánh giá
+
+Khách hàng chỉ được đánh giá tài xế khi chuyến đã đáp ứng điều kiện hoàn thành.
+
+---
+
+### BR-RATE-02 – Khách hàng chỉ được đánh giá chuyến của mình
+
+Khách hàng chỉ được gửi đánh giá đối với chuyến thuộc tài khoản của mình.
+
+---
+
+### BR-RATE-03 – Đánh giá phải gắn với tài xế và chuyến
+
+Mỗi đánh giá phải xác định được:
+
+* Người đánh giá.
+* Chuyến được đánh giá.
+* Tài xế được đánh giá.
+* Nội dung/mức đánh giá.
+* Thời điểm đánh giá.
+
+---
+
+# 10.11. Quy tắc quản trị và vận hành
+
+### BR-ADMIN-01 – Chỉ người có quyền mới được quản trị
+
+Operator/Admin phải đăng nhập và được cấp quyền phù hợp trước khi thực hiện các chức năng quản trị.
+
+---
+
+### BR-ADMIN-02 – Phân quyền theo vai trò
+
+Các chức năng quản trị phải được kiểm soát theo quyền của từng vai trò.
+
+Ví dụ:
+
+```text
+Operator/Admin
+      │
+      ├── Quản lý khách hàng
+      ├── Quản lý tài xế
+      ├── Quản lý phương tiện
+      ├── Theo dõi chuyến
+      ├── Tra cứu giao dịch
+      └── Xử lý chuyến gặp sự cố
+```
+
+Quyền chi tiết của từng vai trò sẽ được xác định trong thiết kế phân quyền.
+
+---
+
+### BR-ADMIN-03 – Thao tác quan trọng phải có audit log
+
+Các thao tác quản trị hoặc thao tác nghiệp vụ quan trọng phải được ghi nhận để phục vụ kiểm tra.
+
+Thông tin audit có thể gồm:
+
+* Người thực hiện.
+* Thời điểm.
+* Hành động.
+* Đối tượng bị tác động.
+* Kết quả thao tác.
+
+---
+
+### BR-ADMIN-04 – Operator có thể hỗ trợ xử lý chuyến gặp sự cố
+
+Khi phát sinh vấn đề trong chuyến, Operator có quyền thực hiện các thao tác hỗ trợ theo phạm vi quyền được cấp, chẳng hạn như kiểm tra thông tin, hỗ trợ xử lý hoặc thay đổi trạng thái phù hợp.
+
+---
+
+# 10.12. Quy tắc bảo mật và dữ liệu
+
+### BR-SEC-01 – Phải xác thực người dùng
+
+Các chức năng yêu cầu đăng nhập phải kiểm tra danh tính người dùng trước khi cho phép truy cập.
+
+---
+
+### BR-SEC-02 – Phải kiểm soát quyền truy cập
+
+Sau khi xác thực, hệ thống phải kiểm tra người dùng có quyền thực hiện chức năng hay không.
+
+```text
+Authentication
+      │
+      ▼
+Authorization
+      │
+      ▼
+Cho phép / Từ chối
+```
+
+---
+
+### BR-SEC-03 – Bảo vệ dữ liệu người dùng
+
+CAB System phải bảo vệ các dữ liệu liên quan đến:
+
+* Thông tin cá nhân.
+* Thông tin tài xế.
+* Thông tin phương tiện.
+* Vị trí.
+* Thông tin giao dịch.
+
+---
+
+### BR-SEC-04 – Audit các thao tác quan trọng
+
+Các thao tác quan trọng liên quan đến dữ liệu và vận hành phải có khả năng truy vết thông qua audit log.
+
+---
+
+# 10.13. Bảng tổng hợp các quy tắc nghiệp vụ
+
+| **Mã**      | **Quy tắc**                                                            | **Nhóm**   | **Mức độ** |
+| ----------- | ---------------------------------------------------------------------- | ---------- | ---------- |
+| BR-ACC-01   | Khách hàng phải xác thực trước khi sử dụng chức năng yêu cầu đăng nhập | Tài khoản  | Cao        |
+| BR-ACC-02   | Thông tin đăng ký phải hợp lệ                                          | Tài khoản  | Cao        |
+| BR-ACC-03   | Tài xế phải được xác nhận trước khi nhận chuyến                        | Tài khoản  | Cao        |
+| BR-ACC-04   | Kiểm soát quyền theo vai trò                                           | Tài khoản  | Cao        |
+| BR-BOOK-01  | Yêu cầu phải có thông tin đặt xe bắt buộc                              | Đặt xe     | Cao        |
+| BR-BOOK-02  | Chỉ yêu cầu hợp lệ mới được tìm tài xế                                 | Đặt xe     | Cao        |
+| BR-BOOK-03  | Mỗi chuyến phải có trạng thái                                          | Đặt xe     | Cao        |
+| BR-BOOK-04  | Chỉ người có quyền mới được xem chuyến                                 | Đặt xe     | Cao        |
+| BR-MATCH-01 | Chỉ tài xế sẵn sàng mới được xem xét                                   | Phân công  | Cao        |
+| BR-MATCH-02 | Tài xế phải phù hợp với yêu cầu                                        | Phân công  | Cao        |
+| BR-MATCH-03 | Tài xế phù hợp được ưu tiên                                            | Phân công  | Cao        |
+| BR-MATCH-04 | Tài xế từ chối thì chuyển sang tài xế khác                             | Phân công  | Cao        |
+| BR-MATCH-05 | Tài xế không phản hồi thì chuyển sang tài xế khác                      | Phân công  | Cao        |
+| BR-MATCH-06 | Không tìm được tài xế phải thông báo                                   | Phân công  | Cao        |
+| BR-TRIP-01  | Chỉ tài xế được phân công mới được cập nhật chuyến                     | Chuyến     | Cao        |
+| BR-TRIP-02  | Trạng thái chuyến phải theo trình tự                                   | Chuyến     | Cao        |
+| BR-TRIP-03  | Thay đổi trạng thái phải được ghi nhận                                 | Chuyến     | Trung bình |
+| BR-TRIP-04  | Cập nhật vị trí tài xế trong quá trình hoạt động                       | Chuyến     | Cao        |
+| BR-FARE-01  | Chuyến phải có đủ thông tin để tính cước                               | Tính cước  | Cao        |
+| BR-FARE-02  | Xác định số tiền sau khi chuyến đạt điều kiện hoàn thành               | Tính cước  | Cao        |
+| BR-FARE-03  | Công thức tính cước phải được cấu hình                                 | Tính cước  | Cao        |
+| BR-PAY-01   | Hỗ trợ tiền mặt và điện tử                                             | Thanh toán | Cao        |
+| BR-PAY-02   | Thanh toán điện tử thông qua Payment Gateway                           | Thanh toán | Cao        |
+| BR-PAY-03   | Ghi nhận trạng thái giao dịch                                          | Thanh toán | Cao        |
+| BR-PAY-04   | Xác nhận kết quả từ Payment Gateway                                    | Thanh toán | Cao        |
+| BR-PAY-05   | Xử lý thanh toán thất bại                                              | Thanh toán | Cao        |
+| BR-PAY-06   | Không lưu dữ liệu thanh toán nhạy cảm                                  | Thanh toán | Cao        |
+| BR-NOTI-01  | Thông báo các sự kiện quan trọng                                       | Thông báo  | Trung bình |
+| BR-NOTI-02  | Gửi thông báo đúng đối tượng                                           | Thông báo  | Cao        |
+| BR-NOTI-03  | Có khả năng mở rộng kênh thông báo                                     | Thông báo  | Trung bình |
+| BR-NOTI-04  | Lỗi thông báo không làm dừng nghiệp vụ chính                           | Thông báo  | Cao        |
+| BR-RATE-01  | Chỉ chuyến hoàn thành mới được đánh giá                                | Đánh giá   | Cao        |
+| BR-RATE-02  | Chỉ khách hàng của chuyến mới được đánh giá                            | Đánh giá   | Cao        |
+| BR-RATE-03  | Đánh giá phải gắn với chuyến và tài xế                                 | Đánh giá   | Cao        |
+| BR-ADMIN-01 | Chỉ người có quyền mới được quản trị                                   | Quản trị   | Cao        |
+| BR-ADMIN-02 | Phân quyền quản trị theo vai trò                                       | Quản trị   | Cao        |
+| BR-ADMIN-03 | Thao tác quan trọng phải có audit log                                  | Quản trị   | Cao        |
+| BR-ADMIN-04 | Operator được hỗ trợ xử lý chuyến gặp sự cố                            | Quản trị   | Trung bình |
+| BR-SEC-01   | Phải xác thực người dùng                                               | Bảo mật    | Cao        |
+| BR-SEC-02   | Phải kiểm soát quyền truy cập                                          | Bảo mật    | Cao        |
+| BR-SEC-03   | Phải bảo vệ dữ liệu người dùng                                         | Bảo mật    | Cao        |
+| BR-SEC-04   | Phải truy vết thao tác quan trọng                                      | Bảo mật    | Cao        |
+
+---
+
+# 10.14. Các quy tắc chưa được xác định cụ thể
+
+Một số quy tắc nghiệp vụ đã được xác định về mặt nguyên tắc nhưng chưa có giá trị cụ thể. Không nên tự đưa ra giá trị trong giai đoạn phân tích.
+
+| **STT** | **Quy tắc cần xác định**                    | **Trạng thái** |
+| ------- | ------------------------------------------- | -------------- |
+| 1       | Công thức tính cước cụ thể                  | Chưa xác định  |
+| 2       | Tiêu chí và thứ tự ưu tiên tài xế           | Chưa xác định  |
+| 3       | Thời gian timeout khi tài xế không phản hồi | Chưa xác định  |
+| 4       | Điều kiện và mức phí hủy chuyến             | Chưa xác định  |
+| 5       | Cách xử lý chi tiết khi mất kết nối         | Chưa xác định  |
+| 6       | Số lần retry thanh toán                     | Chưa xác định  |
+| 7       | Thời gian lưu trữ audit log                 | Chưa xác định  |
+| 8       | Thời gian lưu trữ dữ liệu vị trí            | Chưa xác định  |
+| 9       | Các kênh thông báo được triển khai ban đầu  | Chưa xác định  |
+
+Các nội dung này cần được xác nhận trước khi chuyển sang giai đoạn thiết kế chi tiết.
+
+---
+
+# 10.15. Mối liên hệ giữa Business Rule và Business Process
+
+Các quy tắc nghiệp vụ được sử dụng để kiểm soát các điểm quyết định trong quy trình đặt xe:
+
+```text
+                    QUY TRÌNH ĐẶT XE
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+   [Đặt xe]          [Tìm tài xế]        [Thanh toán]
+        │                  │                  │
+   BR-BOOK-*          BR-MATCH-*           BR-PAY-*
+        │                  │                  │
+        └──────────────────┼──────────────────┘
+                           ▼
+                     [Thực hiện chuyến]
+                           │
+                       BR-TRIP-*
+                           │
+                           ▼
+                      [Đánh giá]
+                           │
+                       BR-RATE-*
+```
+
+Ví dụ:
+
+* Tại bước **Đặt xe**, BR-BOOK-01 quy định yêu cầu phải có đủ thông tin bắt buộc.
+* Tại bước **Tìm tài xế**, BR-MATCH-01 và BR-MATCH-02 quy định tài xế phải đang sẵn sàng và phù hợp.
+* Tại bước **Phân công**, BR-MATCH-04 và BR-MATCH-05 quy định phải tìm tài xế khác khi tài xế từ chối hoặc không phản hồi.
+* Tại bước **Thực hiện chuyến**, BR-TRIP-02 quy định trạng thái phải chuyển theo trình tự hợp lệ.
+* Tại bước **Thanh toán**, BR-PAY-02 quy định thanh toán điện tử phải thông qua Payment Gateway.
+* Tại bước **Đánh giá**, BR-RATE-01 quy định chỉ chuyến hoàn thành mới được đánh giá.
+
+---
+
+# 10.16. Kết quả phân tích
+
+Qua phân tích, các quy tắc nghiệp vụ của CAB System được xác định tập trung vào các nhóm chính: **tài khoản, đặt xe, tìm và phân công tài xế, thực hiện chuyến, tính cước, thanh toán, thông báo, đánh giá, quản trị và bảo mật**.
+
+Các quy tắc này đóng vai trò ràng buộc đối với các quy trình và Use Case của hệ thống. Đặc biệt, các quy tắc về **phân công tài xế, trạng thái chuyến, thanh toán, phân quyền và bảo mật** có ảnh hưởng trực tiếp đến thiết kế hệ thống.
+
+Những quy tắc chưa có thông tin chính thức như **công thức tính cước, tiêu chí ưu tiên tài xế, thời gian timeout và chính sách hủy chuyến** được giữ ở trạng thái chưa xác định để tránh đưa ra giả định không có căn cứ.
+
+Kết quả của Bước 10 sẽ được sử dụng làm cơ sở cho các bước tiếp theo trong việc **phân tích dữ liệu, xác định trách nhiệm của các thành phần hệ thống và thiết kế kiến trúc dịch vụ cho CAB System**.
