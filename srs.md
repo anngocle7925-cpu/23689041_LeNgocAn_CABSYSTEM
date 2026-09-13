@@ -1,4 +1,4 @@
-## Bước 1: Tìm hiểu nghiệp vụ
+## Bước 1 - Tìm hiểu nghiệp vụ
 
 ### 1.1 Vấn đề hiện tại của doanh nghiệp
 
@@ -44,7 +44,7 @@ Theo yêu cầu, doanh nghiệp **chưa chốt** các nội dung sau — Busines
 - Cách xử lý khi mất kết nối mạng (khách hàng hoặc tài xế)
 - Thời gian lưu trữ dữ liệu (lịch sử chuyến, vị trí, giao dịch...)
 
-Trước tiên là bảng stakeholder (2.1), sau đó là ma trận Mendelow dạng sơ đồ (2.2).
+## Bước 2  - Phân tích các bên liên quan
 
 ## 2.1. Bảng Stakeholders
 
@@ -405,6 +405,158 @@ Mỗi FR được nhóm theo **service/module** (đúng định hướng SOA đ�
 ---
 
 **Nhận xét:** Cách nhóm FR theo 7 module ở trên (User/Auth, Trip/Booking, Matching, Driver Operations, Payment, Notification, Admin & Reporting) chính là **7 service ứng viên** cho kiến trúc microservices — mỗi module này sẽ trở thành một service độc lập khi thiết kế kiến trúc ở các bước sau, và tập FR này sẽ là input trực tiếp để vẽ **Use Case Diagram** cho từng actor.
+
+
+## Bước 7 - Business Rules (Quy tắc nghiệp vụ)
+
+Quy tắc nghiệp vụ mô tả **các ràng buộc, điều kiện, logic quyết định** đứng sau các FR — trả lời câu hỏi "khi nào thì làm gì, theo tiêu chí nào". Mình đánh dấu rõ quy tắc nào **đã có cơ sở từ yêu cầu khách hàng** và quy tắc nào **còn là giả định, cần khách hàng xác nhận** (đúng với các điểm tồn đọng đã ghi ở Bước 1 và Bước 4).
+
+### 7.1. Quy tắc về Đặt xe & Matching
+
+| Mã | Quy tắc nghiệp vụ | Trạng thái |
+|---|---|---|
+| QT-01 | Chỉ tài xế đang ở trạng thái "sẵn sàng" mới được đưa vào danh sách matching | ✅ Đã xác nhận |
+| QT-02 | Tài xế được ưu tiên chọn theo khoảng cách gần điểm đón nhất | ⚠️ Giả định — khách hàng chưa chốt tiêu chí ưu tiên (có thể còn tính đến đánh giá, thời gian rảnh...) |
+| QT-03 | Tài xế có thời gian giới hạn để phản hồi (chấp nhận/từ chối) một yêu cầu chuyến, quá hạn coi như từ chối | ⚠️ Giả định — khách hàng chưa chốt con số cụ thể (ví dụ 15s, 30s...) |
+| QT-04 | Nếu tài xế từ chối/không phản hồi, hệ thống tự động chuyển yêu cầu sang tài xế tiếp theo trong danh sách | ✅ Đã xác nhận |
+| QT-05 | Nếu không tìm được tài xế sau một số lần thử nhất định, hệ thống dừng tìm kiếm và thông báo cho khách hàng | ⚠️ Số lần thử cụ thể — cần xác nhận |
+| QT-06 | Một tài xế chỉ được nhận tối đa 1 chuyến tại một thời điểm | ✅ Suy luận hợp lý từ nghiệp vụ, nên xác nhận lại |
+
+### 7.2. Quy tắc về Tài xế
+
+| Mã | Quy tắc nghiệp vụ | Trạng thái |
+|---|---|---|
+| QT-07 | Tài xế phải cập nhật đầy đủ thông tin phương tiện (biển số, loại xe, giấy tờ) trước khi được phép bật trạng thái sẵn sàng | ⚠️ Giả định hợp lý — cần xác nhận có bước duyệt hồ sơ tài xế hay không |
+| QT-08 | Tài xế phải gửi vị trí định kỳ (ví dụ mỗi vài giây) trong suốt chuyến đi để hệ thống theo dõi | ⚠️ Tần suất cụ thể — cần xác nhận |
+| QT-09 | Tài xế không thể chuyển trạng thái chuyến "nhảy cóc" (ví dụ không thể báo "hoàn thành" khi chưa "đón khách") | ✅ Ràng buộc logic hợp lý, nên đưa vào validate |
+
+### 7.3. Quy tắc về Tính cước & Thanh toán
+
+| Mã | Quy tắc nghiệp vụ | Trạng thái |
+|---|---|---|
+| QT-10 | Cước phí được tính sau khi chuyến đi kết thúc, dựa trên quãng đường/thời gian di chuyển | ⚠️ Công thức cụ thể (giá mở cửa, giá/km, phụ phí giờ cao điểm...) — **khách hàng chưa chốt**, cần làm rõ trước khi code |
+| QT-11 | Thanh toán điện tử phải qua cổng thanh toán bên thứ ba; hệ thống CAB không lưu số thẻ/tài khoản | ✅ Đã xác nhận (ràng buộc bảo mật) |
+| QT-12 | Nếu giao dịch điện tử thất bại, hệ thống phải cho phép thử lại hoặc chuyển sang thanh toán tiền mặt | ✅ Đã xác nhận |
+| QT-13 | Một chuyến chỉ được xác nhận là "đã thanh toán" khi có phản hồi thành công từ cổng thanh toán (với thanh toán điện tử) hoặc xác nhận từ tài xế (với tiền mặt) | ⚠️ Giả định hợp lý — cần xác nhận |
+
+### 7.4. Quy tắc về Hủy chuyến
+
+| Mã | Quy tắc nghiệp vụ | Trạng thái |
+|---|---|---|
+| QT-14 | Khách hàng được phép hủy chuyến trước khi tài xế đón khách | ⚠️ Chưa có chính sách chính thức — **cần khách hàng xác nhận** (có tính phí hủy không, giới hạn số lần hủy...) |
+| QT-15 | Tài xế được phép hủy/từ chối chuyến sau khi đã nhận trong một số trường hợp nhất định | ⚠️ Chưa xác nhận điều kiện cụ thể |
+| QT-16 | Chuyến bị hủy phải được ghi nhận lý do và tính vào tỷ lệ hủy trong báo cáo vận hành | ✅ Đã xác nhận (phục vụ báo cáo — BR-22) |
+
+### 7.5. Quy tắc về Đánh giá
+
+| Mã | Quy tắc nghiệp vụ | Trạng thái |
+|---|---|---|
+| QT-17 | Khách hàng chỉ được đánh giá tài xế sau khi chuyến đi ở trạng thái "hoàn thành" | ✅ Đã xác nhận |
+| QT-18 | Mỗi chuyến chỉ được đánh giá một lần | ✅ Ràng buộc logic hợp lý |
+
+### 7.6. Quy tắc về Thông báo
+
+| Mã | Quy tắc nghiệp vụ | Trạng thái |
+|---|---|---|
+| QT-19 | Hệ thống phải gửi thông báo tại các mốc quan trọng: nhận chuyến, tài xế đến, bắt đầu chuyến, hoàn thành, kết quả thanh toán | ✅ Đã xác nhận |
+| QT-20 | Nếu một kênh gửi thông báo lỗi (ví dụ SMS provider down), lỗi đó không được làm gián đoạn luồng chính của chuyến đi | ✅ Đã xác nhận (liên hệ trực tiếp đến NFR cô lập lỗi) |
+
+### 7.7. Quy tắc về Bảo mật & Quản trị
+
+| Mã | Quy tắc nghiệp vụ | Trạng thái |
+|---|---|---|
+| QT-21 | Mỗi vai trò (khách hàng/tài xế/nhân viên vận hành) chỉ được truy cập chức năng thuộc phạm vi quyền hạn của mình | ✅ Đã xác nhận |
+| QT-22 | Mọi thao tác chỉnh sửa/khóa tài khoản hoặc dữ liệu nhạy cảm bởi nhân viên vận hành phải được ghi log | ✅ Đã xác nhận |
+| QT-23 | Dữ liệu vị trí, thông tin cá nhân và giao dịch phải được lưu trữ và truyền tải có bảo mật (mã hóa khi cần) | ✅ Đã xác nhận |
+| QT-24 | Dữ liệu lịch sử chuyến đi/giao dịch phải được lưu trữ tối thiểu trong một khoảng thời gian nhất định | ⚠️ Thời gian lưu trữ cụ thể — **khách hàng chưa chốt** |
+
+### 7.8. Quy tắc phi chức năng liên quan đến kiến trúc
+
+| Mã | Quy tắc nghiệp vụ | Trạng thái |
+|---|---|---|
+| QT-25 | Mỗi service (matching, thanh toán, thông báo, quản trị...) phải hoạt động độc lập — lỗi ở một service không được lan sang service khác | ✅ Đã xác nhận |
+| QT-26 | Hệ thống phải cho phép triển khai cập nhật từng service riêng lẻ mà không cần dừng toàn bộ hệ thống | ✅ Đã xác nhận |
+
+---
+
+## Bước 8 – Yêu cầu phi chức năng (Non-Functional Requirements-NFR)
+
+### 8.1. Performance (Hiệu năng)
+
+| NFR | Mô tả |
+|---|---|
+| NFR-01 | Hệ thống phải phản hồi yêu cầu đặt xe và tìm tài xế trong thời gian chấp nhận được (ví dụ vài giây) kể cả khi có nhiều yêu cầu đồng thời |
+| NFR-02 | Việc cập nhật vị trí tài xế và trạng thái chuyến phải được phản ánh gần như tức thời (real-time/near real-time) trên ứng dụng khách hàng |
+| NFR-03 | Thời gian xử lý một giao dịch thanh toán (kể cả gọi cổng bên thứ ba) phải nằm trong ngưỡng chấp nhận được, có cơ chế timeout rõ ràng |
+
+### 8.2. Scalability (Khả năng mở rộng)
+
+| NFR | Mô tả |
+|---|---|
+| NFR-04 | Hệ thống phải chịu được lượng truy cập tăng đột biến vào giờ cao điểm mà không giảm hiệu năng nghiêm trọng |
+| NFR-05 | Mỗi service (matching, thanh toán, thông báo, quản trị...) phải có khả năng scale độc lập theo tải riêng của nó (ví dụ matching cần scale nhiều hơn vào giờ cao điểm, admin thì không) |
+| NFR-06 | Kiến trúc phải cho phép thêm loại dịch vụ mới, phương thức thanh toán mới, kênh thông báo mới mà không cần thiết kế lại toàn hệ thống |
+
+### 8.3. Reliability & Availability (Độ tin cậy & khả dụng)
+
+| NFR | Mô tả |
+|---|---|
+| NFR-07 | Hệ thống phải đảm bảo tính sẵn sàng cao (high availability) cho các luồng nghiệp vụ chính: đặt xe, matching, cập nhật trạng thái chuyến |
+| NFR-08 | Lỗi ở một service (đặc biệt là thanh toán, thông báo) không được làm gián đoạn hoặc sập các service khác — cần cơ chế cô lập lỗi (fault isolation), ví dụ circuit breaker, timeout, retry có kiểm soát |
+| NFR-09 | Khi một dịch vụ phụ trợ (thông báo, bản đồ...) gặp sự cố, luồng nghiệp vụ chính (đặt xe, chuyến đi) vẫn phải tiếp tục hoạt động ở mức tối thiểu (graceful degradation) |
+
+### 8.4. Maintainability & Deployability (Khả năng bảo trì & triển khai)
+
+| NFR | Mô tả |
+|---|---|
+| NFR-10 | Hệ thống phải cho phép triển khai (deploy) cập nhật từng service riêng lẻ, không cần dừng toàn bộ hệ thống |
+| NFR-11 | Các service phải được thiết kế tách rời (loosely coupled), giao tiếp qua API/message, hạn chế phụ thuộc trực tiếp vào cơ sở dữ liệu của nhau |
+| NFR-12 | Hệ thống phải dễ dàng thêm/thay thế một thành phần (ví dụ đổi cổng thanh toán, thêm kênh thông báo) mà ảnh hưởng tối thiểu đến các phần còn lại |
+
+### 8.5. Security (Bảo mật)
+
+| NFR | Mô tả |
+|---|---|
+| NFR-13 | Hệ thống phải xác thực (authentication) người dùng trước khi cho phép truy cập chức năng |
+| NFR-14 | Hệ thống phải phân quyền (authorization) theo vai trò: khách hàng, tài xế, nhân viên vận hành — mỗi vai trò chỉ thấy/thao tác đúng phạm vi của mình |
+| NFR-15 | Không được lưu trữ thông tin nhạy cảm của thẻ/tài khoản thanh toán trong hệ thống nội bộ |
+| NFR-16 | Dữ liệu cá nhân, vị trí và giao dịch phải được bảo vệ (mã hóa khi truyền tải và/hoặc khi lưu trữ) |
+| NFR-17 | Mọi thao tác quản trị nhạy cảm (sửa/khóa tài khoản, thay đổi dữ liệu quan trọng) phải được ghi audit log, có thể truy vết ai làm gì, khi nào |
+
+### 8.6. Usability (Khả năng sử dụng)
+
+| NFR | Mô tả |
+|---|---|
+| NFR-18 | Giao diện đặt xe cho khách hàng phải đơn giản, tối thiểu số bước để hoàn tất một yêu cầu đặt xe |
+| NFR-19 | Giao diện tài xế phải hiển thị rõ ràng thông tin chuyến (điểm đón/đến, thời gian phản hồi còn lại) để tài xế ra quyết định nhanh |
+| NFR-20 | Giao diện quản trị phải hỗ trợ tìm kiếm, lọc dữ liệu nhanh (khách hàng, tài xế, chuyến đi) cho nhân viên vận hành |
+
+### 8.7. Compliance & Data Retention (Tuân thủ & lưu trữ dữ liệu)
+
+| NFR | Mô tả | Trạng thái |
+|---|---|---|
+| NFR-21 | Hệ thống phải tuân thủ quy định bảo vệ dữ liệu cá nhân hiện hành khi thu thập/xử lý dữ liệu vị trí và thông tin người dùng | ✅ Đã xác nhận (yêu cầu chung) |
+| NFR-22 | Dữ liệu lịch sử chuyến đi và giao dịch phải được lưu trữ tối thiểu trong một khoảng thời gian xác định để phục vụ tra cứu/khiếu nại/báo cáo | ⚠️ Thời gian cụ thể — khách hàng chưa chốt |
+
+### 8.8. Interoperability (Khả năng tích hợp)
+
+| NFR | Mô tả |
+|---|---|
+| NFR-23 | Hệ thống phải tích hợp được với cổng thanh toán bên thứ ba thông qua API chuẩn, không phụ thuộc cứng vào một nhà cung cấp duy nhất (để dễ thay thế sau này) |
+| NFR-24 | Notification Service phải thiết kế theo kiểu adapter/interface chung để dễ tích hợp thêm nhà cung cấp kênh thông báo mới (SMS, email, push...) |
+
+---
+
+**Ma trận liên kết nhanh NFR ↔ định hướng kiến trúc:**
+
+| Nhóm NFR | Ảnh hưởng đến quyết định kiến trúc |
+|---|---|
+| Scalability, Reliability (NFR-04 → 09) | → chọn **microservices**, mỗi service scale/fail độc lập |
+| Maintainability (NFR-10 → 12) | → dùng **API Gateway + service riêng biệt**, giao tiếp qua REST/message queue thay vì gọi trực tiếp DB |
+| Security (NFR-13 → 17) | → cần **Auth Service** riêng (JWT/OAuth), **audit log** tập trung |
+| Interoperability (NFR-23, 24) | → thiết kế **Payment Service** và **Notification Service** theo mô hình adapter, dễ cắm thêm provider mới |
+
+Bạn muốn qua Bước 9 (Use Case: actor, use case diagram, đặc tả use case) tiếp không?
 
 
 # BƯỚC 7 – USE CASE DIAGRAM
