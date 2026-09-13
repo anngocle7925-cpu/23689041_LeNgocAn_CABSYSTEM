@@ -1,7 +1,3 @@
-Được. Dưới đây là **bản hoàn chỉnh `API_specification.md`** để bạn **copy toàn bộ và dán đè vào file hiện tại**.
-
-Mình giữ nội dung bám theo các đặc tả CAB System của bạn, đồng thời **không tự chốt các quy tắc nghiệp vụ mà SRS đang để chưa xác định** như công thức tính cước, thời gian timeout tài xế, tiêu chí ưu tiên tài xế, chính sách hủy chuyến.
-
 ````markdown
 # CAB System API Specification
 
