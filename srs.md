@@ -182,77 +182,149 @@ Nói ngắn gọn: mục đích không phải là "làm ra một app đặt xe",
 - Giả định có tối thiểu **một** cổng thanh toán bên thứ ba được tích hợp trong giai đoạn đầu (không cần multi-gateway ngay).
 - Giả định thông báo trong giai đoạn đầu dùng tối thiểu **1-2 kênh cơ bản** (ví dụ: push notification/SMS), kiến trúc phải cho phép thêm kênh sau này.
 
-## Bước 5 – Xác định yêu cầu nghiệp vụ (Business Requirements)
-### 5.1. Nhóm yêu cầu nghiệp vụ — Khách hàng
 
-| Mã BR | Yêu cầu nghiệp vụ |
+## Bước 5 – Xác định yêu cầu nghiệp vụ
+
+### 5.1. Danh sách yêu cầu nghiệp vụ (Business Requirements)
+
+**Nhóm Khách hàng**
+
+| Mã | Yêu cầu nghiệp vụ |
 |---|---|
-| BR-01 | Hệ thống phải cho phép khách hàng đăng ký tài khoản và đăng nhập để sử dụng dịch vụ |
-| BR-02 | Hệ thống phải cho phép khách hàng cập nhật thông tin cá nhân |
-| BR-03 | Hệ thống phải cho phép khách hàng tạo yêu cầu đặt xe bằng cách nhập điểm đón, điểm đến và chọn loại xe |
-| BR-04 | Hệ thống phải hiển thị cho khách hàng trạng thái chuyến đi theo thời gian thực, bao gồm: đang tìm tài xế, tài xế đã nhận chuyến, thời gian dự kiến tài xế đến, và trạng thái hiện tại của chuyến |
-| BR-05 | Hệ thống phải cho phép khách hàng xem lại lịch sử các chuyến đi đã thực hiện, kèm số tiền đã thanh toán |
-| BR-06 | Hệ thống phải cho phép khách hàng đánh giá tài xế sau khi chuyến đi hoàn thành |
-| BR-07 | Hệ thống phải thông báo rõ ràng cho khách hàng trong trường hợp không tìm được tài xế phù hợp |
+| BR-01 | Hệ thống phải cho phép khách hàng đăng ký, đăng nhập, cập nhật hồ sơ cá nhân |
+| BR-02 | Hệ thống phải cho phép khách hàng tạo yêu cầu đặt xe (điểm đón, điểm đến, loại xe) |
+| BR-03 | Hệ thống phải cho phép khách hàng theo dõi trạng thái chuyến đi theo thời gian thực |
+| BR-04 | Hệ thống phải cho phép khách hàng xem lịch sử chuyến đi |
+| BR-05 | Hệ thống phải cho phép khách hàng đánh giá tài xế sau khi hoàn thành chuyến |
 
-### 5.2. Nhóm yêu cầu nghiệp vụ — Tài xế
+**Nhóm Tài xế**
 
-| Mã BR | Yêu cầu nghiệp vụ |
+| Mã | Yêu cầu nghiệp vụ |
 |---|---|
-| BR-08 | Hệ thống phải cho phép tài xế đăng ký tài khoản, hoặc được nhân viên vận hành tạo tài khoản thay |
-| BR-09 | Hệ thống phải cho phép tài xế cập nhật hồ sơ cá nhân và thông tin phương tiện |
-| BR-10 | Hệ thống phải cho phép tài xế chuyển đổi trạng thái sẵn sàng nhận chuyến khi đang làm việc |
-| BR-11 | Hệ thống phải gửi thông báo cho tài xế khi có yêu cầu đặt xe phù hợp, và cho phép tài xế chấp nhận hoặc từ chối |
-| BR-12 | Hệ thống phải cho phép tài xế cập nhật trạng thái chuyến đi theo từng mốc: đã đến điểm đón, đã đón khách, đang di chuyển, hoàn thành chuyến |
-| BR-13 | Hệ thống phải ghi nhận vị trí của tài xế liên tục để phục vụ việc tìm tài xế gần khách hàng và ước tính thời gian đến |
+| BR-06 | Hệ thống phải cho phép tài xế đăng ký/được tạo tài khoản, cập nhật hồ sơ & thông tin phương tiện |
+| BR-07 | Hệ thống phải cho phép tài xế bật/tắt trạng thái sẵn sàng nhận chuyến |
+| BR-08 | Hệ thống phải cho phép tài xế nhận, chấp nhận hoặc từ chối yêu cầu chuyến |
+| BR-09 | Hệ thống phải cho phép tài xế cập nhật trạng thái chuyến (đến điểm đón, đón khách, di chuyển, hoàn thành) |
+| BR-10 | Hệ thống phải nhận vị trí tài xế được gửi liên tục trong suốt chuyến đi |
 
-### 5.3. Nhóm yêu cầu nghiệp vụ — Tìm & phân công tài xế (Matching)
+**Nhóm Matching (Tìm & phân công tài xế)**
 
-| Mã BR | Yêu cầu nghiệp vụ |
+| Mã | Yêu cầu nghiệp vụ |
 |---|---|
-| BR-14 | Hệ thống phải tự động xác định danh sách tài xế phù hợp dựa trên vị trí, trạng thái sẵn sàng và các tiêu chí vận hành khác khi khách hàng tạo yêu cầu đặt xe |
-| BR-15 | Hệ thống phải ưu tiên đề xuất tài xế phù hợp và gần khách hàng nhất |
-| BR-16 | Hệ thống phải tự động tìm tài xế khác nếu tài xế được đề xuất không phản hồi hoặc từ chối, mà không yêu cầu khách hàng tạo lại yêu cầu đặt xe |
+| BR-11 | Hệ thống phải tự động tìm tài xế phù hợp dựa trên vị trí & trạng thái sẵn sàng |
+| BR-12 | Hệ thống phải có cơ chế fallback tìm tài xế khác khi tài xế được đề xuất từ chối/không phản hồi đúng hạn |
+| BR-13 | Hệ thống phải thông báo cho khách hàng nếu không tìm được tài xế phù hợp |
 
-### 5.4. Nhóm yêu cầu nghiệp vụ — Thanh toán & tính cước
+**Nhóm Thanh toán**
 
-| Mã BR | Yêu cầu nghiệp vụ |
+| Mã | Yêu cầu nghiệp vụ |
 |---|---|
-| BR-17 | Hệ thống phải tự động xác định số tiền khách hàng phải trả sau khi chuyến đi hoàn thành, dựa trên loại dịch vụ và thông tin chuyến đi |
-| BR-18 | Hệ thống phải hỗ trợ khách hàng thanh toán bằng tiền mặt hoặc phương thức thanh toán điện tử |
-| BR-19 | Hệ thống phải tích hợp với nhà cung cấp thanh toán bên ngoài, không được lưu trực tiếp thông tin nhạy cảm của thẻ/tài khoản thanh toán trong hệ thống CAB |
-| BR-20 | Hệ thống phải thông báo cho khách hàng và cho phép xử lý lại khi giao dịch thanh toán điện tử thất bại, theo chính sách của doanh nghiệp |
+| BR-14 | Hệ thống phải tự động tính cước sau khi chuyến đi hoàn thành |
+| BR-15 | Hệ thống phải hỗ trợ thanh toán tiền mặt và thanh toán điện tử qua cổng bên thứ ba |
+| BR-16 | Hệ thống không được lưu trữ thông tin nhạy cảm của thẻ/tài khoản thanh toán |
+| BR-17 | Hệ thống phải xử lý và thông báo khi giao dịch thanh toán thất bại |
 
-### 5.5. Nhóm yêu cầu nghiệp vụ — Thông báo (Notification)
+**Nhóm Thông báo**
 
-| Mã BR | Yêu cầu nghiệp vụ |
+| Mã | Yêu cầu nghiệp vụ |
 |---|---|
-| BR-21 | Hệ thống phải thông báo cho khách hàng tại các mốc: yêu cầu đặt xe được tiếp nhận, tài xế nhận chuyến, tài xế đến điểm đón, chuyến hoàn thành, kết quả thanh toán |
-| BR-22 | Hệ thống phải thông báo cho tài xế về chuyến mới hoặc thay đổi liên quan đến chuyến đang thực hiện |
-| BR-23 | Hệ thống phải có khả năng mở rộng thêm kênh thông báo mới trong tương lai mà không phải thay đổi toàn bộ hệ thống |
+| BR-18 | Hệ thống phải gửi thông báo cho khách hàng & tài xế tại các mốc quan trọng của chuyến đi |
+| BR-19 | Kiến trúc thông báo phải cho phép mở rộng thêm kênh gửi mới trong tương lai mà không ảnh hưởng thành phần khác |
 
-### 5.6. Nhóm yêu cầu nghiệp vụ — Vận hành & Quản trị
+**Nhóm Quản trị vận hành**
 
-| Mã BR | Yêu cầu nghiệp vụ |
+| Mã | Yêu cầu nghiệp vụ |
 |---|---|
-| BR-24 | Hệ thống phải cung cấp giao diện quản trị cho nhân viên vận hành để quản lý khách hàng, tài xế, phương tiện và chuyến đi |
-| BR-25 | Hệ thống phải cho phép nhân viên vận hành xem các chuyến đang diễn ra và kiểm tra trạng thái tài xế |
-| BR-26 | Hệ thống phải cho phép nhân viên vận hành hỗ trợ xử lý các chuyến bị lỗi và tra cứu lịch sử giao dịch |
-| BR-27 | Hệ thống phải phân quyền chức năng quản trị, đảm bảo nhân viên thông thường không thể thực hiện thao tác nhạy cảm |
-| BR-28 | Hệ thống phải cung cấp báo cáo về số lượng chuyến, doanh thu, tỷ lệ chuyến hoàn thành, tỷ lệ hủy, và hiệu quả hoạt động của tài xế |
+| BR-20 | Hệ thống phải cung cấp giao diện quản trị để quản lý khách hàng, tài xế, phương tiện, chuyến đi |
+| BR-21 | Hệ thống phải cho phép phân quyền các thao tác quản trị nhạy cảm |
+| BR-22 | Hệ thống phải cung cấp báo cáo: số chuyến, doanh thu, tỷ lệ hoàn thành/hủy, hiệu quả tài xế |
 
-### 5.7. Nhóm yêu cầu nghiệp vụ — Phi chức năng (ở mức nghiệp vụ)
+**Nhóm Phi chức năng (Non-functional)**
 
-| Mã BR | Yêu cầu nghiệp vụ |
+| Mã | Yêu cầu nghiệp vụ |
 |---|---|
-| BR-29 | Hệ thống phải hoạt động ổn định vào các thời điểm nhu cầu tăng cao |
-| BR-30 | Lỗi tại một chức năng (vd. thanh toán, thông báo) không được làm gián đoạn toàn bộ hệ thống đặt xe |
-| BR-31 | Các thành phần hệ thống phải có khả năng mở rộng độc lập khi tải tăng |
-| BR-32 | Hệ thống phải cho phép triển khai chức năng mới từng phần, hạn chế ảnh hưởng đến chức năng đang hoạt động |
-| BR-33 | Hệ thống phải xác thực khách hàng và tài xế trước khi cho phép sử dụng các chức năng yêu cầu tài khoản |
-| BR-34 | Hệ thống phải kiểm soát quyền truy cập đối với các thao tác quản trị |
-| BR-35 | Hệ thống phải bảo vệ thông tin cá nhân, thông tin phương tiện, dữ liệu vị trí và dữ liệu giao dịch |
-| BR-36 | Hệ thống phải lưu vết (audit log) các thao tác quan trọng để phục vụ kiểm tra khi có sự cố |
+| BR-23 | Hệ thống phải chịu được tải lớn vào giờ cao điểm |
+| BR-24 | Lỗi ở một thành phần (thanh toán, thông báo...) không được làm sập toàn hệ thống |
+| BR-25 | Hệ thống phải cho phép triển khai (deploy) độc lập từng thành phần |
+| BR-26 | Hệ thống phải xác thực người dùng và kiểm soát quyền truy cập theo vai trò |
+| BR-27 | Hệ thống phải bảo vệ dữ liệu cá nhân, vị trí, giao dịch |
+| BR-28 | Hệ thống phải ghi audit log cho các thao tác quan trọng |
+
+### 5.2. Mô hình nghiệp vụ (Business Process Model)
+
+```mermaid
+flowchart TD
+    subgraph KH["Khach hang"]
+        A1[Gui yeu cau dat xe]
+        A6[Theo doi chuyen di]
+        A7[Thanh toan]
+        A8[Danh gia tai xe]
+    end
+
+    subgraph MS["Matching Service"]
+        B1{Tim tai xe phu hop}
+        B2[Gui yeu cau chuyen cho tai xe]
+        B4[Fallback: chon tai xe khac]
+        B5[Thong bao khong tim duoc tai xe]
+    end
+
+    subgraph TX["Tai xe"]
+        C1[Nhan yeu cau chuyen]
+        C2{Chap nhan hay tu choi}
+        C3[Di chuyen den diem don]
+        C4[Don khach - bat dau chuyen]
+        C5[Cap nhat vi tri lien tuc]
+        C6[Hoan thanh chuyen]
+    end
+
+    subgraph TT["Payment Service"]
+        D1[Tinh cuoc]
+        D2{Phuong thuc thanh toan}
+        D3[Xac nhan tien mat]
+        D4[Goi cong thanh toan ben thu 3]
+        D5{Giao dich thanh cong}
+        D6[Xu ly loi / thu lai]
+    end
+
+    subgraph NT["Notification Service"]
+        E1[Thong bao trang thai chuyen]
+    end
+
+    A1 --> B1
+    B1 -- Tim thay --> B2
+    B1 -- Khong tim thay --> B5
+    B5 --> E1
+    B2 --> C1
+    C1 --> C2
+    C2 -- Tu choi hoac timeout --> B4
+    B4 --> B1
+    C2 -- Chap nhan --> C3
+    C3 --> E1
+    C3 --> C4
+    C4 --> C5
+    C5 --> A6
+    C4 --> E1
+    C5 --> C6
+    C6 --> D1
+    D1 --> D2
+    D2 -- Tien mat --> D3
+    D2 -- Dien tu --> D4
+    D4 --> D5
+    D5 -- That bai --> D6
+    D6 --> D4
+    D5 -- Thanh cong --> A7
+    D3 --> A7
+    A7 --> A8
+    A8 --> E1
+```
+
+**Giải thích mô hình:**
+
+- Mỗi **subgraph** tương ứng với một actor/service — đúng tinh thần SOA: Khách hàng, Matching Service, Tài xế, Payment Service, Notification Service đều là các khối tách biệt, chỉ trao đổi qua các mũi tên (tương đương gọi API/message giữa các service).
+- Vòng lặp `B1 → B2 → C2 → B4 → B1` thể hiện đúng **BR-12** (cơ chế fallback tìm tài xế khác khi bị từ chối/timeout).
+- Nhánh `D5 -- That bai --> D6 --> D4` thể hiện **BR-17** (xử lý khi giao dịch thanh toán thất bại, có thể thử lại).
+- `Notification Service` (E1) được gọi từ nhiều điểm khác nhau trong flow (khi không tìm được tài xế, khi tài xế đến điểm đón/đón khách, khi đánh giá xong) — thể hiện đúng **BR-18/BR-19**: thông báo xuyên suốt vòng đời chuyến đi và tách biệt thành service riêng để dễ mở rộng kênh sau này.
+
 
 ## Bước 6 – Phân rã yêu cầu chức năng (Functional Requirements)
 
