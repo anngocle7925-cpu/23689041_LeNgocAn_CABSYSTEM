@@ -1,0 +1,116 @@
+openapi: 3.0.3
+info:
+  title: CAB System API
+  version: 1.0.0
+  description: 'API Document cho CAB System - nhóm nghiệp vụ gửi thông báo.
+
+
+    Đối chiếu SRS: FR-06.1 → FR-06.8.'
+servers:
+- url: http://localhost:8080/api/v1
+  description: Local development server
+tags:
+- name: Notification
+  description: Gửi và quản lý thông báo
+paths:
+  /notifications:
+    post:
+      tags:
+      - Notification
+      summary: Gửi thông báo
+      operationId: sendNotification
+      description: CAB System gửi thông báo đến khách hàng hoặc tài xế thông qua Notification Provider. Các loại thông báo
+        được sử dụng theo các sự kiện nghiệp vụ trong SRS.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '201':
+          description: Gửi thông báo thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      x-fr-reference: FR-06.1, FR-06.2, FR-06.3, FR-06.4, FR-06.5, FR-06.6, FR-06.7, FR-06.8
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: Thông tin request không hợp lệ
+    Notification:
+      type: object
+      properties:
+        notificationId:
+          type: string
+          example: NOTI001
+        userId:
+          type: string
+          example: CUS001
+        type:
+          type: string
+          example: DRIVER_ASSIGNED
+        message:
+          type: string
+          example: Tài xế đã được phân công
+        status:
+          type: string
+          example: SENT
+    NotificationListResponse:
+      type: object
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    NotificationRequest:
+      type: object
+      required:
+      - userId
+      - type
+      - message
+      properties:
+        userId:
+          type: string
+          example: CUS001
+        type:
+          type: string
+          example: DRIVER_ASSIGNED
+        message:
+          type: string
+          example: Tài xế đã được phân công cho chuyến đi của bạn
+        provider:
+          type: string
+          description: Notification Provider xử lý việc gửi thông báo.
+  responses:
+    BadRequest:
+      description: Request không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Chưa xác thực hoặc access token không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token dùng để xác thực người dùng.

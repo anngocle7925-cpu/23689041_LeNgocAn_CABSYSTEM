@@ -1,0 +1,255 @@
+openapi: 3.0.3
+info:
+  title: CAB System API
+  version: 1.0.0
+  description: 'API Document cho CAB System - nhóm nghiệp vụ xác thực và quản lý tài khoản.
+
+
+    Đối chiếu SRS: FR-01.1, FR-01.2, FR-01.4.'
+servers:
+- url: http://localhost:8080/api/v1
+  description: Local development server
+tags:
+- name: Authentication
+  description: Đăng ký, đăng nhập và quản lý mật khẩu
+paths:
+  /auth/register:
+    post:
+      tags:
+      - Authentication
+      summary: Đăng ký tài khoản khách hàng
+      operationId: registerCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Đăng ký thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      description: Đăng ký tài khoản khách hàng bằng số điện thoại hoặc email và xác thực OTP.
+      x-fr-reference: FR-01.1
+      x-uc-reference: UC-08
+  /auth/login:
+    post:
+      tags:
+      - Authentication
+      summary: Đăng nhập
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      x-fr-reference: FR-01.2
+      x-uc-reference: UC-08
+  /auth/password/change:
+    post:
+      tags:
+      - Authentication
+      summary: Đổi mật khẩu
+      operationId: changePassword
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Đổi mật khẩu thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      x-fr-reference: FR-01.4
+      x-uc-reference: UC-08
+  /auth/password/recover:
+    post:
+      tags:
+      - Authentication
+      summary: Khôi phục mật khẩu
+      operationId: recoverPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordRecoveryRequest'
+      responses:
+        '200':
+          description: Tiếp nhận yêu cầu khôi phục mật khẩu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      x-fr-reference: FR-01.4
+      x-uc-reference: UC-08
+components:
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: access-token
+        userId:
+          type: string
+          example: CUS001
+        role:
+          type: string
+          enum:
+          - CUSTOMER
+          - DRIVER
+          - OPERATOR
+          - ADMIN
+    ChangePasswordRequest:
+      type: object
+      required:
+      - currentPassword
+      - newPassword
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          example: '********'
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          example: '********'
+    Error:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: Thông tin request không hợp lệ
+    LoginRequest:
+      type: object
+      required:
+      - password
+      properties:
+        phone:
+          type: string
+          example: 0901234567
+        email:
+          type: string
+          format: email
+          example: customer@example.com
+        password:
+          type: string
+          format: password
+          example: '********'
+      description: Đăng nhập bằng số điện thoại hoặc email cùng mật khẩu.
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Thao tác thành công
+    PasswordRecoveryRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          example: 0901234567
+        email:
+          type: string
+          format: email
+          example: customer@example.com
+    RegisterRequest:
+      type: object
+      required:
+      - password
+      - fullName
+      properties:
+        phone:
+          type: string
+          example: 0901234567
+        email:
+          type: string
+          format: email
+          example: customer@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: '********'
+        fullName:
+          type: string
+          example: Nguyen Van A
+        otp:
+          type: string
+          description: Mã OTP xác thực tài khoản.
+          example: '123456'
+      description: Yêu cầu phải cung cấp số điện thoại hoặc email; OTP được dùng để xác thực.
+  responses:
+    BadRequest:
+      description: Request không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Xung đột dữ liệu hoặc trạng thái nghiệp vụ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: Lỗi phía máy chủ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Chưa xác thực hoặc access token không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token dùng để xác thực người dùng.

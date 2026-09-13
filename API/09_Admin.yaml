@@ -1,0 +1,521 @@
+openapi: 3.0.3
+info:
+  title: CAB System API
+  version: 1.0.0
+  description: 'API Document cho CAB System - nhóm nghiệp vụ quản trị và vận hành.
+
+
+    Đối chiếu SRS: FR-07.1 → FR-07.8.'
+servers:
+- url: http://localhost:8080/api/v1
+  description: Local development server
+tags:
+- name: Admin
+  description: Quản trị và vận hành
+paths:
+  /admin/customers:
+    get:
+      tags:
+      - Admin
+      summary: Quản lý danh sách khách hàng
+      operationId: getAdminCustomers
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Danh sách khách hàng
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      x-fr-reference: FR-07.1
+      description: Yêu cầu quyền quản trị phù hợp theo vai trò (FR-07.8).
+      x-fr-role-reference: FR-07.8
+  /admin/drivers:
+    get:
+      tags:
+      - Admin
+      summary: Quản lý danh sách tài xế
+      operationId: getAdminDrivers
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Danh sách tài xế
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      x-fr-reference: FR-07.2
+      description: Yêu cầu quyền quản trị phù hợp theo vai trò (FR-07.8).
+      x-fr-role-reference: FR-07.8
+    post:
+      tags:
+      - Admin
+      summary: Tạo tài khoản tài xế bởi Operator
+      operationId: createDriverByOperator
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminDriverCreateRequest'
+      responses:
+        '201':
+          description: Tạo tài khoản tài xế thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      x-fr-reference: FR-07.2
+      description: Yêu cầu quyền quản trị phù hợp theo vai trò (FR-07.8).
+      x-fr-role-reference: FR-07.8
+  /admin/drivers/{driverId}/approval:
+    put:
+      tags:
+      - Admin
+      summary: Phê duyệt tài khoản tài xế
+      operationId: approveDriver
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/DriverId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverApprovalRequest'
+      responses:
+        '200':
+          description: Cập nhật trạng thái phê duyệt thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-fr-reference: FR-07.2
+      description: Yêu cầu quyền quản trị phù hợp theo vai trò (FR-07.8).
+      x-fr-role-reference: FR-07.8
+  /admin/vehicles:
+    get:
+      tags:
+      - Admin
+      summary: Quản lý danh sách phương tiện
+      operationId: getAdminVehicles
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Danh sách phương tiện
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      x-fr-reference: FR-07.3
+      description: Yêu cầu quyền quản trị phù hợp theo vai trò (FR-07.8).
+      x-fr-role-reference: FR-07.8
+  /admin/rides/active:
+    get:
+      tags:
+      - Admin
+      summary: Theo dõi các chuyến đang hoạt động
+      operationId: getActiveRides
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Danh sách chuyến đang hoạt động
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RideListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      x-fr-reference: FR-07.4, FR-07.5
+      description: Yêu cầu quyền quản trị phù hợp theo vai trò (FR-07.8).
+      x-fr-role-reference: FR-07.8
+  /admin/rides/{rideId}/reassign:
+    post:
+      tags:
+      - Admin
+      summary: Phân công lại tài xế
+      operationId: reassignDriver
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/RideId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReassignDriverRequest'
+      responses:
+        '200':
+          description: Phân công lại thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-fr-reference: FR-07.6
+      description: Yêu cầu quyền quản trị phù hợp theo vai trò (FR-07.8).
+      x-fr-role-reference: FR-07.8
+  /admin/payments/{paymentId}:
+    get:
+      tags:
+      - Admin
+      summary: Tra cứu giao dịch
+      operationId: getAdminPayment
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/PaymentId'
+      responses:
+        '200':
+          description: Thông tin giao dịch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-fr-reference: FR-07.7
+      description: Yêu cầu quyền quản trị phù hợp theo vai trò (FR-07.8).
+      x-fr-role-reference: FR-07.8
+components:
+  schemas:
+    AdminDriverCreateRequest:
+      type: object
+      required:
+      - fullName
+      - phone
+      properties:
+        fullName:
+          type: string
+          example: Tran Van B
+        phone:
+          type: string
+          example: 0912345678
+        email:
+          type: string
+          format: email
+          example: driver@example.com
+    Customer:
+      type: object
+      properties:
+        customerId:
+          type: string
+          example: CUS001
+        fullName:
+          type: string
+          example: Nguyen Van A
+        phone:
+          type: string
+          example: 0901234567
+        email:
+          type: string
+          format: email
+          example: customer@example.com
+    CustomerListResponse:
+      type: object
+      properties:
+        customers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+    Driver:
+      type: object
+      properties:
+        driverId:
+          type: string
+          example: DRV001
+        fullName:
+          type: string
+          example: Tran Van B
+        phone:
+          type: string
+          example: 0912345678
+        email:
+          type: string
+          format: email
+          example: driver@example.com
+        licenseNumber:
+          type: string
+          example: 79A123456
+        approvalStatus:
+          type: string
+          enum:
+          - PENDING_APPROVAL
+          - APPROVED
+          - REJECTED
+        availabilityStatus:
+          type: string
+          enum:
+          - ONLINE
+          - OFFLINE
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+        location:
+          $ref: '#/components/schemas/Location'
+    DriverApprovalRequest:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - APPROVED
+          - REJECTED
+    DriverListResponse:
+      type: object
+      properties:
+        drivers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Driver'
+    Error:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: Thông tin request không hợp lệ
+    Fare:
+      type: object
+      properties:
+        rideId:
+          type: string
+          example: RIDE001
+        amount:
+          type: number
+          format: double
+          example: 85000
+        currency:
+          type: string
+          example: VND
+    Location:
+      type: object
+      required:
+      - latitude
+      - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          example: 10.762622
+        longitude:
+          type: number
+          format: double
+          example: 106.660172
+        address:
+          type: string
+          example: Điểm đón
+    Payment:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          example: PAY001
+        rideId:
+          type: string
+          example: RIDE001
+        amount:
+          type: number
+          format: double
+          example: 85000
+        currency:
+          type: string
+          example: VND
+        paymentMethod:
+          type: string
+          enum:
+          - CASH
+          - ELECTRONIC
+        status:
+          type: string
+          enum:
+          - PENDING
+          - PAID
+          - FAILED
+        transactionId:
+          type: string
+          nullable: true
+          example: TXN001
+    ReassignDriverRequest:
+      type: object
+      required:
+      - driverId
+      properties:
+        driverId:
+          type: string
+          example: DRV002
+    Ride:
+      type: object
+      properties:
+        rideId:
+          type: string
+          example: RIDE001
+        customerId:
+          type: string
+          example: CUS001
+        driverId:
+          type: string
+          nullable: true
+          example: DRV001
+        pickupLocation:
+          $ref: '#/components/schemas/Location'
+        dropoffLocation:
+          $ref: '#/components/schemas/Location'
+        vehicleType:
+          type: string
+          example: MOTORBIKE
+        status:
+          $ref: '#/components/schemas/RideStatus'
+        fare:
+          $ref: '#/components/schemas/Fare'
+    RideListResponse:
+      type: object
+      properties:
+        rides:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ride'
+    RideStatus:
+      type: string
+      enum:
+      - SEARCHING_DRIVER
+      - DRIVER_ASSIGNED
+      - DRIVER_ARRIVED
+      - PICKED_UP
+      - IN_TRANSIT
+      - COMPLETED
+      - CANCELLED
+    Vehicle:
+      type: object
+      properties:
+        vehicleId:
+          type: string
+          example: VEH001
+        driverId:
+          type: string
+          example: DRV001
+        vehicleType:
+          type: string
+          example: MOTORBIKE
+        licensePlate:
+          type: string
+          example: 59A12345
+        vehicleModel:
+          type: string
+          example: Honda Vision
+    VehicleListResponse:
+      type: object
+      properties:
+        vehicles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vehicle'
+  responses:
+    BadRequest:
+      description: Request không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Không có quyền truy cập
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Chưa xác thực hoặc access token không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  parameters:
+    DriverId:
+      name: driverId
+      in: path
+      required: true
+      description: Mã tài xế
+      schema:
+        type: string
+        example: DRV001
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      description: Mã giao dịch
+      schema:
+        type: string
+        example: PAY001
+    RideId:
+      name: rideId
+      in: path
+      required: true
+      description: Mã chuyến
+      schema:
+        type: string
+        example: RIDE001
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token dùng để xác thực người dùng.

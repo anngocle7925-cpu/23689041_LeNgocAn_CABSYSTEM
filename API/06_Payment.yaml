@@ -1,0 +1,272 @@
+openapi: 3.0.3
+info:
+  title: CAB System API
+  version: 1.0.0
+  description: 'API Document cho CAB System - nhóm nghiệp vụ tính cước và thanh toán.
+
+
+    Đối chiếu SRS: FR-05.1 → FR-05.6.'
+servers:
+- url: http://localhost:8080/api/v1
+  description: Local development server
+tags:
+- name: Payment
+  description: Tính cước và thanh toán
+paths:
+  /rides/{rideId}/fare:
+    get:
+      tags:
+      - Payment
+      summary: Lấy kết quả tính cước chuyến
+      operationId: getRideFare
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/RideId'
+      responses:
+        '200':
+          description: Kết quả tính cước
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fare'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-fr-reference: FR-05.1
+      description: Trả về số tiền cước được hệ thống xác định dựa trên loại dịch vụ và thông tin chuyến. Công thức cụ thể
+        chưa được SRS chốt.
+  /rides/{rideId}/payments:
+    post:
+      tags:
+      - Payment
+      summary: Thanh toán chuyến đi
+      operationId: createPayment
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/RideId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '201':
+          description: Tạo yêu cầu thanh toán thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      x-fr-reference: FR-05.2, FR-05.3
+      description: Ghi nhận thanh toán tiền mặt hoặc khởi tạo thanh toán điện tử qua Payment Gateway bên thứ ba. Không gửi
+        dữ liệu thẻ/tài khoản nhạy cảm cho CAB System.
+  /rides/{rideId}/payment:
+    get:
+      tags:
+      - Payment
+      summary: Xem thông tin thanh toán của chuyến
+      operationId: getRidePayment
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/RideId'
+      responses:
+        '200':
+          description: Thông tin thanh toán
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-fr-reference: FR-05.6
+  /payments/callback:
+    post:
+      tags:
+      - Payment
+      summary: Nhận kết quả thanh toán từ Payment Gateway
+      operationId: paymentCallback
+      description: Payment Gateway gửi kết quả giao dịch về CAB System qua callback/webhook. Cơ chế xác thực callback được
+        triển khai theo tích hợp thực tế và không yêu cầu bearer token trong tài liệu này.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCallbackRequest'
+      responses:
+        '200':
+          description: Đã tiếp nhận kết quả thanh toán
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      x-fr-reference: FR-05.4
+  /rides/{rideId}/payments/retry:
+    post:
+      tags:
+      - Payment
+      summary: Thử lại thanh toán điện tử thất bại
+      operationId: retryPayment
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/RideId'
+      responses:
+        '200':
+          description: Đã khởi tạo lại yêu cầu thanh toán
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      x-fr-reference: FR-05.5
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: Thông tin request không hợp lệ
+    Fare:
+      type: object
+      properties:
+        rideId:
+          type: string
+          example: RIDE001
+        amount:
+          type: number
+          format: double
+          example: 85000
+        currency:
+          type: string
+          example: VND
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Thao tác thành công
+    Payment:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          example: PAY001
+        rideId:
+          type: string
+          example: RIDE001
+        amount:
+          type: number
+          format: double
+          example: 85000
+        currency:
+          type: string
+          example: VND
+        paymentMethod:
+          type: string
+          enum:
+          - CASH
+          - ELECTRONIC
+        status:
+          type: string
+          enum:
+          - PENDING
+          - PAID
+          - FAILED
+        transactionId:
+          type: string
+          nullable: true
+          example: TXN001
+    PaymentCallbackRequest:
+      type: object
+      required:
+      - paymentId
+      - status
+      properties:
+        paymentId:
+          type: string
+          example: PAY001
+        transactionId:
+          type: string
+          example: TXN001
+        status:
+          type: string
+          enum:
+          - SUCCESS
+          - FAILED
+    PaymentRequest:
+      type: object
+      required:
+      - paymentMethod
+      properties:
+        paymentMethod:
+          type: string
+          enum:
+          - CASH
+          - ELECTRONIC
+  responses:
+    BadRequest:
+      description: Request không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Xung đột dữ liệu hoặc trạng thái nghiệp vụ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Chưa xác thực hoặc access token không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  parameters:
+    RideId:
+      name: rideId
+      in: path
+      required: true
+      description: Mã chuyến
+      schema:
+        type: string
+        example: RIDE001
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token dùng để xác thực người dùng.
