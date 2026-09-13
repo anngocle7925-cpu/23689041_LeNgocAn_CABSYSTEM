@@ -1,0 +1,266 @@
+openapi: 3.0.3
+info:
+  title: CAB System API
+  version: 1.0.0
+  description: 'API Document cho CAB System - nền tảng đặt xe trực tuyến.
+
+
+    API hỗ trợ các nghiệp vụ chính:
+
+    - Quản lý tài khoản khách hàng và tài xế
+
+    - Đặt xe và quản lý chuyến
+
+    - Tìm và phân công tài xế
+
+    - Theo dõi trạng thái và vị trí chuyến
+
+    - Tính cước và thanh toán
+
+    - Gửi thông báo
+
+    - Đánh giá tài xế
+
+    - Quản trị, vận hành và báo cáo
+
+
+    Tài liệu này được xây dựng dựa trên SRS của CAB System. Các quy tắc nghiệp vụ
+
+    chưa được xác định trong SRS, như công thức tính cước, tiêu chí ưu tiên tài xế,
+
+    thời gian timeout và chính sách hủy chuyến, không được cố định trong API.
+
+    '
+servers:
+- url: http://localhost:8080/api/v1
+  description: Local development server
+tags:
+- name: Authentication
+  description: Đăng ký, đăng nhập và quản lý mật khẩu
+paths:
+  /auth/register:
+    post:
+      tags:
+      - Authentication
+      summary: Đăng ký tài khoản khách hàng
+      operationId: registerCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Đăng ký thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/login:
+    post:
+      tags:
+      - Authentication
+      summary: Đăng nhập
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/password/change:
+    post:
+      tags:
+      - Authentication
+      summary: Đổi mật khẩu
+      operationId: changePassword
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Đổi mật khẩu thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/password/recover:
+    post:
+      tags:
+      - Authentication
+      summary: Khôi phục mật khẩu
+      operationId: recoverPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordRecoveryRequest'
+      responses:
+        '200':
+          description: Tiếp nhận yêu cầu khôi phục mật khẩu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+components:
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: access-token
+        userId:
+          type: string
+          example: CUS001
+        role:
+          type: string
+          enum:
+          - CUSTOMER
+          - DRIVER
+          - OPERATOR
+          - ADMIN
+    ChangePasswordRequest:
+      type: object
+      required:
+      - currentPassword
+      - newPassword
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          example: '********'
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          example: '********'
+    Error:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: Thông tin request không hợp lệ
+    LoginRequest:
+      type: object
+      required:
+      - password
+      properties:
+        phone:
+          type: string
+          example: 0901234567
+        email:
+          type: string
+          format: email
+          example: customer@example.com
+        password:
+          type: string
+          format: password
+          example: '********'
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Thao tác thành công
+    PasswordRecoveryRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          example: 0901234567
+        email:
+          type: string
+          format: email
+          example: customer@example.com
+    RegisterRequest:
+      type: object
+      required:
+      - password
+      - fullName
+      properties:
+        phone:
+          type: string
+          example: 0901234567
+        email:
+          type: string
+          format: email
+          example: customer@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: '********'
+        fullName:
+          type: string
+          example: Nguyen Van A
+      description: Có thể sử dụng phone hoặc email theo cơ chế xác thực của hệ thống.
+  responses:
+    BadRequest:
+      description: Request không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Xung đột dữ liệu hoặc trạng thái nghiệp vụ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: Lỗi phía máy chủ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Chưa xác thực hoặc access token không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token dùng để xác thực người dùng.

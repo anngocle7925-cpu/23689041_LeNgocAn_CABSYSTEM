@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: CAB System API
+  version: 1.0.0
+  description: 'API Document cho CAB System - nền tảng đặt xe trực tuyến.
+
+
+    API hỗ trợ các nghiệp vụ chính:
+
+    - Quản lý tài khoản khách hàng và tài xế
+
+    - Đặt xe và quản lý chuyến
+
+    - Tìm và phân công tài xế
+
+    - Theo dõi trạng thái và vị trí chuyến
+
+    - Tính cước và thanh toán
+
+    - Gửi thông báo
+
+    - Đánh giá tài xế
+
+    - Quản trị, vận hành và báo cáo
+
+
+    Tài liệu này được xây dựng dựa trên SRS của CAB System. Các quy tắc nghiệp vụ
+
+    chưa được xác định trong SRS, như công thức tính cước, tiêu chí ưu tiên tài xế,
+
+    thời gian timeout và chính sách hủy chuyến, không được cố định trong API.
+
+    '
+servers:
+- url: http://localhost:8080/api/v1
+  description: Local development server
+tags:
+- name: Notification
+  description: Gửi và quản lý thông báo
+paths:
+  /notifications:
+    get:
+      tags:
+      - Notification
+      summary: Xem thông báo của người dùng
+      operationId: getNotifications
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Danh sách thông báo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+      - Notification
+      summary: Gửi thông báo
+      operationId: sendNotification
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '201':
+          description: Gửi thông báo thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: Thông tin request không hợp lệ
+    Notification:
+      type: object
+      properties:
+        notificationId:
+          type: string
+          example: NOTI001
+        userId:
+          type: string
+          example: CUS001
+        type:
+          type: string
+          example: DRIVER_ASSIGNED
+        message:
+          type: string
+          example: Tài xế đã được phân công
+        status:
+          type: string
+          example: SENT
+    NotificationListResponse:
+      type: object
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    NotificationRequest:
+      type: object
+      required:
+      - userId
+      - type
+      - message
+      properties:
+        userId:
+          type: string
+          example: CUS001
+        type:
+          type: string
+          example: DRIVER_ASSIGNED
+        message:
+          type: string
+          example: Tài xế đã được phân công cho chuyến đi của bạn
+  responses:
+    BadRequest:
+      description: Request không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Chưa xác thực hoặc access token không hợp lệ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token dùng để xác thực người dùng.
