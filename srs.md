@@ -627,3 +627,743 @@ Use Case Diagram cho thấy CAB System được tổ chức xoay quanh nghiệp 
 
 Việc xác định Use Case trung tâm giúp làm rõ các nghiệp vụ có mức độ liên kết cao trong hệ thống. Đây cũng là cơ sở cho bước tiếp theo là phân tích chi tiết luồng xử lý và xác định ranh giới giữa các dịch vụ trong kiến trúc Service-Oriented Architecture/Microservices.
 
+# BƯỚC 8 – ĐẶC TẢ USE CASE
+
+## 8.1. Danh sách Use Case cần đặc tả
+
+Dựa trên Use Case Diagram ở Bước 7 và các yêu cầu chức năng đã xác định, các Use Case nghiệp vụ chính của CAB System được lựa chọn để đặc tả chi tiết như sau:
+
+| Mã    | Tên Use Case                 | Actor chính       | Actor phụ             |
+| ----- | ---------------------------- | ----------------- | --------------------- |
+| UC-01 | Đặt xe                       | Khách hàng        | Hệ thống              |
+| UC-02 | Tìm & phân công tài xế       | Hệ thống          | Tài xế                |
+| UC-03 | Theo dõi trạng thái chuyến   | Khách hàng        | Hệ thống              |
+| UC-04 | Cập nhật trạng thái chuyến   | Tài xế            | Hệ thống              |
+| UC-05 | Thanh toán                   | Khách hàng        | Payment Gateway       |
+| UC-06 | Đánh giá tài xế              | Khách hàng        | Hệ thống              |
+| UC-07 | Gửi thông báo                | Hệ thống          | Notification Provider |
+| UC-08 | Quản lý tài khoản khách hàng | Khách hàng        | Hệ thống              |
+| UC-09 | Quản lý tài khoản tài xế     | Tài xế / Operator | Hệ thống              |
+| UC-10 | Quản trị & vận hành          | Operator/Admin    | Hệ thống              |
+| UC-11 | Xem báo cáo                  | Operator/Admin    | Hệ thống              |
+
+> **Lưu ý:** Các quy tắc nghiệp vụ chưa được xác định chính thức như công thức tính cước, tiêu chí ưu tiên tài xế, thời gian phản hồi của tài xế, chính sách hủy chuyến... chưa được gán giá trị cụ thể trong đặc tả. Khi có quyết định chính thức từ phía doanh nghiệp, các nội dung này sẽ được cập nhật.
+
+---
+
+# 8.2. Đặc tả Use Case "Đặt xe"
+
+| **Thuộc tính**     | **Nội dung**                                                                                                           |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| **Mã Use Case**    | UC-01                                                                                                                  |
+| **Tên Use Case**   | Đặt xe                                                                                                                 |
+| **Mô tả sơ lược**  | Cho phép khách hàng nhập thông tin chuyến đi và tạo yêu cầu đặt xe trên CAB System.                                    |
+| **Actor chính**    | Khách hàng                                                                                                             |
+| **Actor phụ**      | Hệ thống                                                                                                               |
+| **Tiền điều kiện** | Khách hàng đã đăng nhập; thông tin điểm đón và điểm đến hợp lệ.                                                        |
+| **Hậu điều kiện**  | Yêu cầu đặt xe được tạo và chuyển sang quá trình tìm, phân công tài xế; khách hàng nhận được trạng thái xử lý yêu cầu. |
+| **Kích hoạt**      | Khách hàng chọn chức năng đặt xe.                                                                                      |
+
+### Luồng sự kiện chính
+
+1. Khách hàng chọn chức năng **Đặt xe**.
+2. Hệ thống hiển thị biểu mẫu đặt xe.
+3. Khách hàng nhập điểm đón, điểm đến và loại xe/dịch vụ.
+4. Khách hàng xác nhận yêu cầu đặt xe.
+5. Hệ thống kiểm tra tính hợp lệ của thông tin.
+6. Hệ thống tạo yêu cầu đặt xe với trạng thái đang tìm tài xế.
+7. Hệ thống thực hiện tìm tài xế phù hợp.
+8. Khi tìm được tài xế, hệ thống chuyển yêu cầu sang quá trình phân công.
+9. Hệ thống cập nhật thông tin tài xế cho chuyến đi.
+10. Hệ thống gửi thông báo cho khách hàng về kết quả phân công.
+11. Use Case kết thúc.
+
+### Luồng thay thế / ngoại lệ
+
+**A1. Thông tin đặt xe không hợp lệ**
+
+1. Hệ thống phát hiện thông tin điểm đón, điểm đến hoặc loại xe không hợp lệ.
+2. Hệ thống thông báo lỗi.
+3. Khách hàng điều chỉnh thông tin.
+4. Quay lại bước 3 của luồng chính.
+
+**A2. Không tìm được tài xế**
+
+1. Hệ thống không tìm được tài xế phù hợp.
+2. Hệ thống cập nhật trạng thái yêu cầu.
+3. Hệ thống thông báo cho khách hàng rằng chưa tìm được tài xế.
+4. Use Case kết thúc.
+
+**A3. Tài xế từ chối hoặc không phản hồi**
+
+1. Tài xế được phân công từ chối hoặc không phản hồi yêu cầu.
+2. Hệ thống tiếp tục tìm tài xế phù hợp khác.
+3. Nếu tìm được tài xế khác, hệ thống tiếp tục quá trình phân công.
+4. Nếu không còn tài xế phù hợp, thực hiện luồng A2.
+
+### Quy tắc nghiệp vụ
+
+* Chỉ khách hàng đã đăng nhập mới được tạo yêu cầu đặt xe.
+* Yêu cầu phải có tối thiểu thông tin điểm đón, điểm đến và loại xe/dịch vụ.
+* Một yêu cầu chỉ được chuyển sang thực hiện chuyến khi có tài xế được phân công.
+* Việc lựa chọn và phân công tài xế được thực hiện tự động bởi hệ thống.
+
+### Dữ liệu vào
+
+* Mã khách hàng.
+* Điểm đón.
+* Điểm đến.
+* Loại xe/dịch vụ.
+* Thông tin thời điểm đặt xe.
+
+### Dữ liệu ra
+
+* Mã yêu cầu/chuyến.
+* Trạng thái yêu cầu.
+* Thông tin tài xế nếu được phân công.
+* Thông báo kết quả xử lý.
+
+---
+
+# 8.3. Đặc tả Use Case "Tìm & phân công tài xế"
+
+| **Thuộc tính**     | **Nội dung**                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| **Mã Use Case**    | UC-02                                                                                            |
+| **Tên Use Case**   | Tìm & phân công tài xế                                                                           |
+| **Mô tả sơ lược**  | Hệ thống tìm các tài xế phù hợp với yêu cầu đặt xe và thực hiện phân công tài xế cho chuyến đi.  |
+| **Actor chính**    | Hệ thống                                                                                         |
+| **Actor phụ**      | Tài xế                                                                                           |
+| **Tiền điều kiện** | Có yêu cầu đặt xe hợp lệ đang chờ tìm tài xế; hệ thống có thông tin vị trí và trạng thái tài xế. |
+| **Hậu điều kiện**  | Tài xế được phân công cho chuyến hoặc hệ thống xác định không tìm được tài xế phù hợp.           |
+| **Kích hoạt**      | Một yêu cầu đặt xe mới được tạo.                                                                 |
+
+### Luồng sự kiện chính
+
+1. Hệ thống tiếp nhận yêu cầu đặt xe.
+2. Hệ thống xác định các tài xế đang sẵn sàng phục vụ.
+3. Hệ thống lọc các tài xế phù hợp dựa trên vị trí và các tiêu chí nghiệp vụ đã được cấu hình.
+4. Hệ thống sắp xếp các tài xế theo mức độ phù hợp.
+5. Hệ thống gửi đề nghị nhận chuyến đến tài xế phù hợp theo thứ tự.
+6. Tài xế chấp nhận chuyến.
+7. Hệ thống ghi nhận tài xế được phân công.
+8. Hệ thống cập nhật trạng thái chuyến.
+9. Hệ thống thông báo cho khách hàng và tài xế.
+10. Use Case kết thúc.
+
+### Luồng thay thế / ngoại lệ
+
+**A1. Tài xế từ chối chuyến**
+
+1. Tài xế từ chối yêu cầu.
+2. Hệ thống ghi nhận kết quả.
+3. Hệ thống chuyển sang tài xế phù hợp tiếp theo.
+4. Tiếp tục từ bước 5 của luồng chính.
+
+**A2. Tài xế không phản hồi**
+
+1. Hệ thống xác định tài xế không phản hồi trong khoảng thời gian được cấu hình.
+2. Hệ thống ghi nhận trạng thái không phản hồi.
+3. Hệ thống chuyển sang tài xế phù hợp tiếp theo.
+
+> Thời gian timeout cụ thể chưa được xác định trong phạm vi yêu cầu hiện tại.
+
+**A3. Không có tài xế phù hợp**
+
+1. Hệ thống không tìm thấy tài xế đáp ứng điều kiện.
+2. Hệ thống cập nhật trạng thái yêu cầu.
+3. Hệ thống gửi thông báo cho khách hàng.
+4. Use Case kết thúc.
+
+### Quy tắc nghiệp vụ
+
+* Chỉ xem xét các tài xế đang ở trạng thái sẵn sàng phục vụ.
+* Tài xế phải đáp ứng các tiêu chí phù hợp với yêu cầu chuyến.
+* Hệ thống có cơ chế chuyển sang tài xế khác khi tài xế hiện tại từ chối hoặc không phản hồi.
+* Tiêu chí ưu tiên cụ thể của tài xế sẽ được cấu hình theo quy định nghiệp vụ chính thức.
+
+### Dữ liệu vào
+
+* Mã yêu cầu đặt xe.
+* Điểm đón.
+* Điểm đến.
+* Loại xe/dịch vụ.
+* Vị trí và trạng thái tài xế.
+
+### Dữ liệu ra
+
+* Danh sách tài xế phù hợp.
+* Tài xế được phân công.
+* Trạng thái phân công.
+* Thông báo kết quả.
+
+---
+
+# 8.4. Đặc tả Use Case "Theo dõi trạng thái chuyến"
+
+| **Thuộc tính**     | **Nội dung**                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| **Mã Use Case**    | UC-03                                                                                                   |
+| **Tên Use Case**   | Theo dõi trạng thái chuyến                                                                              |
+| **Mô tả sơ lược**  | Cho phép khách hàng theo dõi trạng thái chuyến và thông tin liên quan trong quá trình thực hiện chuyến. |
+| **Actor chính**    | Khách hàng                                                                                              |
+| **Actor phụ**      | Hệ thống                                                                                                |
+| **Tiền điều kiện** | Khách hàng đã đăng nhập và có chuyến đang được xử lý hoặc đang thực hiện.                               |
+| **Hậu điều kiện**  | Khách hàng nhận được trạng thái chuyến mới nhất và thông tin tài xế/vị trí khi có dữ liệu.              |
+| **Kích hoạt**      | Khách hàng mở màn hình theo dõi chuyến.                                                                 |
+
+### Luồng sự kiện chính
+
+1. Khách hàng chọn chuyến cần theo dõi.
+2. Hệ thống xác thực quyền truy cập của khách hàng.
+3. Hệ thống lấy trạng thái hiện tại của chuyến.
+4. Hệ thống lấy thông tin tài xế được phân công.
+5. Hệ thống hiển thị trạng thái chuyến cho khách hàng.
+6. Hệ thống cập nhật thông tin vị trí tài xế khi có dữ liệu mới.
+7. Khách hàng tiếp tục theo dõi cho đến khi chuyến kết thúc.
+8. Use Case kết thúc khi chuyến hoàn thành hoặc không còn cần theo dõi.
+
+### Luồng thay thế / ngoại lệ
+
+**A1. Chưa có tài xế**
+
+1. Hệ thống hiển thị trạng thái đang tìm tài xế.
+2. Hệ thống tiếp tục cập nhật trạng thái khi có kết quả mới.
+
+**A2. Không nhận được dữ liệu vị trí mới**
+
+1. Hệ thống giữ lại thông tin vị trí gần nhất.
+2. Hệ thống hiển thị trạng thái dữ liệu vị trí không được cập nhật.
+3. Khi có dữ liệu mới, hệ thống tiếp tục cập nhật.
+
+**A3. Khách hàng không có quyền xem chuyến**
+
+1. Hệ thống từ chối yêu cầu truy cập.
+2. Hệ thống thông báo lỗi.
+3. Use Case kết thúc.
+
+### Dữ liệu vào
+
+* Mã khách hàng.
+* Mã chuyến.
+
+### Dữ liệu ra
+
+* Trạng thái chuyến.
+* Thông tin tài xế.
+* Thông tin phương tiện.
+* Vị trí tài xế khi có dữ liệu.
+* Thông tin liên quan đến quá trình thực hiện chuyến.
+
+---
+
+# 8.5. Đặc tả Use Case "Cập nhật trạng thái chuyến"
+
+| **Thuộc tính**     | **Nội dung**                                                              |
+| ------------------ | ------------------------------------------------------------------------- |
+| **Mã Use Case**    | UC-04                                                                     |
+| **Tên Use Case**   | Cập nhật trạng thái chuyến                                                |
+| **Mô tả sơ lược**  | Cho phép tài xế cập nhật trạng thái chuyến theo từng giai đoạn thực hiện. |
+| **Actor chính**    | Tài xế                                                                    |
+| **Actor phụ**      | Hệ thống                                                                  |
+| **Tiền điều kiện** | Tài xế đã đăng nhập và được phân công cho chuyến.                         |
+| **Hậu điều kiện**  | Trạng thái chuyến được cập nhật và hệ thống ghi nhận thay đổi.            |
+| **Kích hoạt**      | Tài xế thực hiện hành động làm thay đổi trạng thái chuyến.                |
+
+### Luồng sự kiện chính
+
+1. Tài xế mở thông tin chuyến được phân công.
+2. Hệ thống hiển thị trạng thái hiện tại.
+3. Tài xế thực hiện hành động tương ứng với giai đoạn của chuyến.
+4. Tài xế gửi trạng thái mới.
+5. Hệ thống kiểm tra tính hợp lệ của trạng thái.
+6. Hệ thống cập nhật trạng thái chuyến.
+7. Hệ thống ghi nhận thời điểm thay đổi.
+8. Hệ thống gửi thông tin cập nhật đến các bên liên quan.
+9. Use Case kết thúc.
+
+### Các trạng thái chính
+
+* Đã phân công.
+* Tài xế đang đến.
+* Tài xế đã đến điểm đón.
+* Đã đón khách.
+* Đang thực hiện chuyến.
+* Hoàn thành.
+
+### Luồng thay thế / ngoại lệ
+
+**A1. Trạng thái không hợp lệ**
+
+1. Hệ thống phát hiện trạng thái mới không phù hợp với trạng thái hiện tại.
+2. Hệ thống từ chối cập nhật.
+3. Hệ thống thông báo lỗi cho tài xế.
+4. Use Case kết thúc.
+
+**A2. Tài xế không phải tài xế được phân công**
+
+1. Hệ thống kiểm tra quyền cập nhật.
+2. Hệ thống phát hiện tài xế không được phân công cho chuyến.
+3. Hệ thống từ chối thao tác.
+
+### Quy tắc nghiệp vụ
+
+* Chỉ tài xế được phân công mới được cập nhật trạng thái chuyến.
+* Trạng thái phải tuân theo trình tự nghiệp vụ của chuyến.
+* Mỗi thay đổi trạng thái cần được ghi nhận để phục vụ theo dõi và kiểm tra.
+
+### Dữ liệu vào
+
+* Mã chuyến.
+* Mã tài xế.
+* Trạng thái mới.
+* Thời điểm cập nhật.
+
+### Dữ liệu ra
+
+* Trạng thái chuyến mới.
+* Thời điểm cập nhật.
+* Thông báo trạng thái đến các bên liên quan.
+
+---
+
+# 8.6. Đặc tả Use Case "Thanh toán"
+
+| **Thuộc tính**     | **Nội dung**                                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **Mã Use Case**    | UC-05                                                                                                                |
+| **Tên Use Case**   | Thanh toán                                                                                                           |
+| **Mô tả sơ lược**  | Thực hiện xác định số tiền phải thanh toán và xử lý thanh toán cho chuyến đi bằng tiền mặt hoặc phương thức điện tử. |
+| **Actor chính**    | Khách hàng                                                                                                           |
+| **Actor phụ**      | Payment Gateway                                                                                                      |
+| **Tiền điều kiện** | Chuyến đã hoàn thành hoặc đạt điều kiện thực hiện thanh toán; thông tin chuyến cần thiết để tính cước đã có.         |
+| **Hậu điều kiện**  | Giao dịch được ghi nhận với trạng thái thanh toán tương ứng.                                                         |
+| **Kích hoạt**      | Chuyến hoàn thành và hệ thống bắt đầu xử lý thanh toán.                                                              |
+
+### Luồng sự kiện chính
+
+1. Hệ thống nhận thông tin chuyến đã hoàn thành.
+2. Hệ thống xác định số tiền phải thanh toán dựa trên thông tin chuyến và loại dịch vụ.
+3. Hệ thống hiển thị số tiền cần thanh toán.
+4. Khách hàng lựa chọn phương thức thanh toán.
+5. Nếu chọn tiền mặt, hệ thống ghi nhận trạng thái thanh toán tiền mặt.
+6. Nếu chọn thanh toán điện tử, hệ thống gửi yêu cầu đến Payment Gateway.
+7. Payment Gateway xử lý giao dịch.
+8. Payment Gateway trả kết quả giao dịch cho hệ thống.
+9. Hệ thống ghi nhận kết quả thanh toán.
+10. Hệ thống gửi thông báo kết quả cho khách hàng.
+11. Use Case kết thúc.
+
+### Luồng thay thế / ngoại lệ
+
+**A1. Thanh toán điện tử thất bại**
+
+1. Payment Gateway trả về kết quả giao dịch thất bại.
+2. Hệ thống ghi nhận trạng thái thanh toán thất bại.
+3. Hệ thống thông báo cho khách hàng.
+4. Hệ thống cho phép thực hiện lại theo chính sách thanh toán được cấu hình.
+
+**A2. Payment Gateway không phản hồi**
+
+1. Hệ thống không nhận được kết quả giao dịch.
+2. Hệ thống ghi nhận giao dịch ở trạng thái chờ xử lý.
+3. Hệ thống chờ kết quả xác nhận từ Payment Gateway.
+
+**A3. Người dùng chọn thanh toán tiền mặt**
+
+1. Hệ thống ghi nhận phương thức thanh toán là tiền mặt.
+2. Hệ thống cập nhật trạng thái thanh toán theo kết quả xác nhận.
+3. Use Case kết thúc.
+
+### Quy tắc nghiệp vụ
+
+* Số tiền thanh toán được xác định dựa trên thông tin chuyến và loại dịch vụ.
+* CAB System không lưu trữ thông tin nhạy cảm của thẻ hoặc tài khoản ngân hàng.
+* Thanh toán điện tử phải được thực hiện thông qua Payment Gateway.
+* Kết quả thanh toán điện tử được cập nhật thông qua cơ chế phản hồi/callback hoặc webhook.
+* Công thức tính cước chi tiết chưa được xác định trong phạm vi hiện tại.
+
+### Dữ liệu vào
+
+* Mã chuyến.
+* Thông tin chuyến.
+* Loại dịch vụ.
+* Phương thức thanh toán.
+* Thông tin cần thiết để thực hiện giao dịch điện tử.
+
+### Dữ liệu ra
+
+* Số tiền thanh toán.
+* Trạng thái thanh toán.
+* Mã giao dịch từ Payment Gateway nếu có.
+* Thông báo kết quả thanh toán.
+
+---
+
+# 8.7. Đặc tả Use Case "Đánh giá tài xế"
+
+| **Thuộc tính**     | **Nội dung**                                                      |
+| ------------------ | ----------------------------------------------------------------- |
+| **Mã Use Case**    | UC-06                                                             |
+| **Tên Use Case**   | Đánh giá tài xế                                                   |
+| **Mô tả sơ lược**  | Cho phép khách hàng đánh giá tài xế sau khi chuyến đi hoàn thành. |
+| **Actor chính**    | Khách hàng                                                        |
+| **Actor phụ**      | Hệ thống                                                          |
+| **Tiền điều kiện** | Chuyến đã hoàn thành; khách hàng là người thực hiện chuyến.       |
+| **Hậu điều kiện**  | Đánh giá được lưu và gắn với chuyến/tài xế tương ứng.             |
+| **Kích hoạt**      | Khách hàng chọn chức năng đánh giá sau chuyến đi.                 |
+
+### Luồng sự kiện chính
+
+1. Khách hàng mở thông tin chuyến đã hoàn thành.
+2. Hệ thống kiểm tra điều kiện đánh giá.
+3. Hệ thống hiển thị biểu mẫu đánh giá.
+4. Khách hàng nhập mức đánh giá và nhận xét nếu có.
+5. Khách hàng gửi đánh giá.
+6. Hệ thống kiểm tra dữ liệu.
+7. Hệ thống lưu đánh giá.
+8. Hệ thống thông báo kết quả lưu đánh giá.
+9. Use Case kết thúc.
+
+### Luồng thay thế / ngoại lệ
+
+**A1. Chuyến chưa hoàn thành**
+
+1. Hệ thống xác định chuyến chưa đủ điều kiện đánh giá.
+2. Hệ thống không cho phép gửi đánh giá.
+3. Use Case kết thúc.
+
+**A2. Đánh giá không hợp lệ**
+
+1. Hệ thống phát hiện dữ liệu đánh giá không hợp lệ.
+2. Hệ thống thông báo lỗi.
+3. Khách hàng điều chỉnh và gửi lại.
+
+### Quy tắc nghiệp vụ
+
+* Chỉ khách hàng đã thực hiện chuyến mới được đánh giá tài xế của chuyến đó.
+* Đánh giá phải gắn với đúng chuyến và tài xế.
+* Đánh giá được lưu để phục vụ theo dõi chất lượng dịch vụ và hiệu suất tài xế.
+
+### Dữ liệu vào
+
+* Mã khách hàng.
+* Mã chuyến.
+* Mã tài xế.
+* Mức đánh giá.
+* Nhận xét nếu có.
+
+### Dữ liệu ra
+
+* Thông tin đánh giá đã lưu.
+* Trạng thái ghi nhận đánh giá.
+
+---
+
+# 8.8. Đặc tả Use Case "Gửi thông báo"
+
+| **Thuộc tính**     | **Nội dung**                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| **Mã Use Case**    | UC-07                                                                                                               |
+| **Tên Use Case**   | Gửi thông báo                                                                                                       |
+| **Mô tả sơ lược**  | Gửi thông báo đến khách hàng hoặc tài xế khi xảy ra các sự kiện quan trọng trong quá trình đặt và thực hiện chuyến. |
+| **Actor chính**    | Hệ thống                                                                                                            |
+| **Actor phụ**      | Notification Provider                                                                                               |
+| **Tiền điều kiện** | Có sự kiện cần gửi thông báo và thông tin người nhận hợp lệ.                                                        |
+| **Hậu điều kiện**  | Thông báo được gửi thành công hoặc hệ thống ghi nhận trạng thái gửi thất bại.                                       |
+| **Kích hoạt**      | Một sự kiện trong hệ thống cần thông báo đến người dùng.                                                            |
+
+### Luồng sự kiện chính
+
+1. Hệ thống phát sinh sự kiện cần thông báo.
+2. Hệ thống xác định người nhận.
+3. Hệ thống tạo nội dung thông báo.
+4. Hệ thống xác định kênh gửi phù hợp.
+5. Hệ thống gửi thông báo thông qua Notification Provider nếu cần.
+6. Hệ thống ghi nhận trạng thái gửi.
+7. Use Case kết thúc.
+
+### Các sự kiện thông báo chính
+
+**Đối với khách hàng:**
+
+* Yêu cầu đặt xe được tiếp nhận.
+* Đã phân công tài xế.
+* Tài xế đã đến điểm đón.
+* Chuyến hoàn thành.
+* Thanh toán thành công/thất bại.
+* Không tìm được tài xế.
+
+**Đối với tài xế:**
+
+* Có yêu cầu chuyến phù hợp.
+* Thông tin chuyến thay đổi.
+* Kết quả xử lý chuyến.
+
+### Luồng thay thế / ngoại lệ
+
+**A1. Gửi thông báo thất bại**
+
+1. Notification Provider trả về kết quả thất bại.
+2. Hệ thống ghi nhận lỗi.
+3. Hệ thống thực hiện cơ chế xử lý lại nếu được cấu hình.
+4. Nếu vẫn thất bại, hệ thống lưu trạng thái để phục vụ kiểm tra.
+
+### Quy tắc nghiệp vụ
+
+* Nội dung thông báo phải phù hợp với sự kiện phát sinh.
+* Thông báo chỉ được gửi đến đúng đối tượng liên quan.
+* Kiến trúc thông báo phải cho phép mở rộng thêm các kênh như Push Notification, SMS hoặc Email.
+* Việc gửi thông báo không được làm gián đoạn luồng nghiệp vụ chính khi Notification Provider gặp sự cố.
+
+### Dữ liệu vào
+
+* Loại sự kiện.
+* Người nhận.
+* Nội dung thông báo.
+* Kênh thông báo.
+
+### Dữ liệu ra
+
+* Trạng thái gửi.
+* Thông tin lỗi nếu gửi thất bại.
+
+---
+
+# 8.9. Đặc tả Use Case "Quản lý tài khoản khách hàng"
+
+| **Thuộc tính**     | **Nội dung**                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| **Mã Use Case**    | UC-08                                                                                                   |
+| **Tên Use Case**   | Quản lý tài khoản khách hàng                                                                            |
+| **Mô tả sơ lược**  | Cho phép khách hàng đăng ký, đăng nhập và cập nhật thông tin tài khoản.                                 |
+| **Actor chính**    | Khách hàng                                                                                              |
+| **Actor phụ**      | Hệ thống                                                                                                |
+| **Tiền điều kiện** | Tùy chức năng: đăng ký không yêu cầu tài khoản; các chức năng cập nhật yêu cầu khách hàng đã đăng nhập. |
+| **Hậu điều kiện**  | Tài khoản được tạo hoặc thông tin tài khoản được cập nhật thành công.                                   |
+| **Kích hoạt**      | Khách hàng chọn chức năng liên quan đến tài khoản.                                                      |
+
+### Luồng sự kiện chính
+
+1. Khách hàng chọn chức năng đăng ký, đăng nhập hoặc cập nhật tài khoản.
+2. Hệ thống hiển thị biểu mẫu tương ứng.
+3. Khách hàng nhập thông tin.
+4. Hệ thống kiểm tra tính hợp lệ.
+5. Hệ thống thực hiện thao tác tương ứng.
+6. Hệ thống thông báo kết quả.
+7. Use Case kết thúc.
+
+### Quy tắc nghiệp vụ
+
+* Tài khoản phải được xác thực trước khi sử dụng các chức năng yêu cầu đăng nhập.
+* Thông tin tài khoản phải được bảo vệ theo yêu cầu bảo mật.
+* Khách hàng chỉ được cập nhật thông tin thuộc tài khoản của mình.
+
+---
+
+# 8.10. Đặc tả Use Case "Quản lý tài khoản tài xế"
+
+| **Thuộc tính**     | **Nội dung**                                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **Mã Use Case**    | UC-09                                                                                                                |
+| **Tên Use Case**   | Quản lý tài khoản tài xế                                                                                             |
+| **Mô tả sơ lược**  | Cho phép tài xế đăng ký, cập nhật thông tin cá nhân và phương tiện; Operator có thể tạo và quản lý tài khoản tài xế. |
+| **Actor chính**    | Tài xế / Operator                                                                                                    |
+| **Actor phụ**      | Hệ thống                                                                                                             |
+| **Tiền điều kiện** | Tài xế hoặc Operator đã xác thực quyền truy cập phù hợp.                                                             |
+| **Hậu điều kiện**  | Thông tin tài xế hoặc phương tiện được tạo/cập nhật thành công.                                                      |
+| **Kích hoạt**      | Người dùng chọn chức năng quản lý tài khoản tài xế.                                                                  |
+
+### Luồng sự kiện chính
+
+1. Actor chọn chức năng quản lý tài khoản tài xế.
+2. Hệ thống hiển thị thông tin hiện tại.
+3. Actor nhập hoặc cập nhật thông tin.
+4. Hệ thống kiểm tra dữ liệu.
+5. Hệ thống lưu thông tin.
+6. Hệ thống thông báo kết quả.
+
+### Các thông tin chính
+
+* Thông tin cá nhân tài xế.
+* Thông tin liên hệ.
+* Thông tin giấy phép theo phạm vi hệ thống.
+* Thông tin phương tiện.
+* Trạng thái hoạt động của tài xế.
+
+### Luồng thay thế / ngoại lệ
+
+**A1. Tài xế chưa được Operator phê duyệt**
+
+1. Hệ thống ghi nhận tài khoản ở trạng thái chờ phê duyệt.
+2. Tài xế chưa được tham gia nhận chuyến cho đến khi đáp ứng điều kiện hoạt động.
+
+**A2. Thông tin không hợp lệ**
+
+1. Hệ thống từ chối dữ liệu.
+2. Hệ thống thông báo lỗi.
+3. Actor chỉnh sửa và gửi lại.
+
+---
+
+# 8.11. Đặc tả Use Case "Quản trị & vận hành"
+
+| **Thuộc tính**     | **Nội dung**                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| **Mã Use Case**    | UC-10                                                                                                               |
+| **Tên Use Case**   | Quản trị & vận hành                                                                                                 |
+| **Mô tả sơ lược**  | Cho phép Operator/Admin quản lý người dùng, tài xế, phương tiện, chuyến đi và hỗ trợ xử lý các tình huống vận hành. |
+| **Actor chính**    | Operator/Admin                                                                                                      |
+| **Actor phụ**      | Hệ thống                                                                                                            |
+| **Tiền điều kiện** | Operator/Admin đã đăng nhập và có quyền phù hợp.                                                                    |
+| **Hậu điều kiện**  | Dữ liệu hoặc trạng thái nghiệp vụ được cập nhật theo thao tác quản trị.                                             |
+| **Kích hoạt**      | Operator/Admin truy cập chức năng quản trị và vận hành.                                                             |
+
+### Luồng sự kiện chính
+
+1. Operator/Admin đăng nhập hệ thống.
+2. Hệ thống xác thực tài khoản và quyền truy cập.
+3. Operator/Admin chọn chức năng quản trị.
+4. Hệ thống hiển thị dữ liệu tương ứng.
+5. Operator/Admin thực hiện thao tác.
+6. Hệ thống kiểm tra quyền và dữ liệu.
+7. Hệ thống thực hiện thao tác.
+8. Hệ thống ghi nhận kết quả và audit log đối với các thao tác quan trọng.
+9. Hệ thống hiển thị kết quả.
+
+### Các chức năng chính
+
+* Quản lý khách hàng.
+* Quản lý tài xế.
+* Phê duyệt tài xế.
+* Quản lý phương tiện.
+* Theo dõi chuyến đang hoạt động.
+* Theo dõi trạng thái tài xế.
+* Tra cứu giao dịch.
+* Hỗ trợ xử lý chuyến gặp sự cố.
+* Phân quyền Operator/Admin.
+
+### Luồng thay thế / ngoại lệ
+
+**A1. Không đủ quyền**
+
+1. Hệ thống kiểm tra quyền của Operator/Admin.
+2. Hệ thống phát hiện tài khoản không có quyền thực hiện thao tác.
+3. Hệ thống từ chối thao tác và thông báo lỗi.
+
+**A2. Xử lý chuyến gặp sự cố**
+
+1. Operator xác định chuyến cần can thiệp.
+2. Operator xem thông tin chuyến.
+3. Operator thực hiện thao tác phù hợp như hỗ trợ xử lý, hủy hoặc phân công lại theo quyền được cấp.
+4. Hệ thống ghi nhận thao tác.
+5. Hệ thống cập nhật trạng thái liên quan.
+
+### Quy tắc nghiệp vụ
+
+* Chỉ Operator/Admin có quyền phù hợp mới được thực hiện chức năng quản trị.
+* Các thao tác quan trọng phải được ghi nhận audit log.
+* Quyền truy cập được kiểm soát theo vai trò.
+
+---
+
+# 8.12. Đặc tả Use Case "Xem báo cáo"
+
+| **Thuộc tính**     | **Nội dung**                                                                                        |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| **Mã Use Case**    | UC-11                                                                                               |
+| **Tên Use Case**   | Xem báo cáo                                                                                         |
+| **Mô tả sơ lược**  | Cho phép Operator/Admin xem các báo cáo phục vụ theo dõi hoạt động kinh doanh và vận hành hệ thống. |
+| **Actor chính**    | Operator/Admin                                                                                      |
+| **Actor phụ**      | Hệ thống                                                                                            |
+| **Tiền điều kiện** | Operator/Admin đã đăng nhập và có quyền xem báo cáo.                                                |
+| **Hậu điều kiện**  | Báo cáo được hiển thị theo khoảng thời gian và tiêu chí được chọn.                                  |
+| **Kích hoạt**      | Operator/Admin chọn chức năng báo cáo.                                                              |
+
+### Luồng sự kiện chính
+
+1. Operator/Admin truy cập chức năng báo cáo.
+2. Hệ thống hiển thị các loại báo cáo.
+3. Operator/Admin lựa chọn loại báo cáo và khoảng thời gian.
+4. Hệ thống truy vấn dữ liệu.
+5. Hệ thống tổng hợp dữ liệu.
+6. Hệ thống hiển thị kết quả báo cáo.
+7. Use Case kết thúc.
+
+### Các báo cáo chính
+
+* Số lượng chuyến theo ngày/tuần/tháng.
+* Doanh thu.
+* Tỷ lệ hoàn thành chuyến.
+* Tỷ lệ hủy chuyến.
+* Hiệu suất tài xế.
+
+### Luồng thay thế / ngoại lệ
+
+**A1. Không có dữ liệu**
+
+1. Hệ thống không tìm thấy dữ liệu phù hợp.
+2. Hệ thống thông báo không có dữ liệu trong khoảng thời gian được chọn.
+3. Use Case kết thúc.
+
+**A2. Khoảng thời gian không hợp lệ**
+
+1. Hệ thống kiểm tra khoảng thời gian.
+2. Hệ thống phát hiện dữ liệu không hợp lệ.
+3. Hệ thống yêu cầu Operator/Admin chọn lại khoảng thời gian.
+
+---
+
+# 8.13. Mối liên hệ giữa các Use Case chính
+
+Luồng nghiệp vụ trung tâm của CAB System có thể được mô tả như sau:
+
+```text
+Khách hàng
+    │
+    ▼
+[Đặt xe]
+    │
+    ▼
+[Tìm & phân công tài xế]
+    │
+    ├──────────────► [Gửi thông báo]
+    │
+    ▼
+[Cập nhật trạng thái chuyến]
+    │
+    ▼
+[Theo dõi trạng thái chuyến]
+    │
+    ▼
+[Chuyến hoàn thành]
+    │
+    ▼
+[Thanh toán]
+    │
+    ├──────────────► Payment Gateway
+    │
+    ▼
+[Gửi thông báo]
+    │
+    ▼
+[Đánh giá tài xế]
+```
+
+Trong đó:
+
+* **Đặt xe** là Use Case trung tâm, khởi tạo quy trình phục vụ khách hàng.
+* **Tìm & phân công tài xế** chịu trách nhiệm tự động tìm và phân công tài xế.
+* **Cập nhật trạng thái chuyến** do tài xế thực hiện trong quá trình phục vụ.
+* **Theo dõi trạng thái chuyến** cung cấp thông tin cho khách hàng.
+* **Thanh toán** xử lý số tiền của chuyến bằng tiền mặt hoặc thông qua Payment Gateway.
+* **Gửi thông báo** hỗ trợ truyền đạt các sự kiện quan trọng đến khách hàng và tài xế.
+* **Đánh giá tài xế** được thực hiện sau khi chuyến hoàn thành.
+
+## 8.14. Tổng kết đặc tả Use Case
+
+Các Use Case trên mô tả các nghiệp vụ chính của CAB System từ khi khách hàng tạo yêu cầu đặt xe cho đến khi chuyến hoàn thành, thanh toán và đánh giá tài xế. Đồng thời, các Use Case quản lý tài khoản, quản trị vận hành và báo cáo hỗ trợ hoạt động của hệ thống.
+
+Đặc tả được xây dựng theo hướng tách biệt trách nhiệm giữa các tác nhân và hệ thống. Các thành phần bên ngoài như **Payment Gateway** và **Notification Provider** được xem là actor phụ vì có tương tác trực tiếp với CAB System.
+
+Các quy tắc nghiệp vụ chưa được doanh nghiệp xác định cụ thể được giữ ở mức khái quát. Những nội dung như công thức tính cước, tiêu chí ưu tiên tài xế, thời gian timeout và chính sách hủy chuyến sẽ được cập nhật khi có yêu cầu nghiệp vụ chính thức.
