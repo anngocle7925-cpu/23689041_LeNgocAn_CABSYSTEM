@@ -1288,7 +1288,7 @@ Scenario: AC-22-01 - Ghi audit log cho thao tac nhay cam
 
 Bảng này nối chuỗi: **Business Requirement (BR) → Functional Requirement (FR) → Use Case (UC) → Business Rule (QT) → Acceptance Criteria (AC)** — mục đích là chứng minh **không có yêu cầu nào bị "rơi rớt"** qua các bước phân tích, và ngược lại, không có gì được code mà không xuất phát từ một yêu cầu gốc.
 
-### 15.1. Nhóm Khách hàng
+### 14.1. Nhóm Khách hàng
 
 | BR | FR | UC | Quy tắc (QT) | AC | Ghi chú |
 |---|---|---|---|---|---|
@@ -1298,7 +1298,7 @@ Bảng này nối chuỗi: **Business Requirement (BR) → Functional Requiremen
 | BR-04 | FR-12 | UC-06 | — | *(chưa viết — cần bổ sung AC-06)* | |
 | BR-05 | FR-13 | UC-07 | QT-17, QT-18 | AC-07-01, AC-07-02 | ✅ Đầy đủ |
 
-### 15.2. Nhóm Tài xế
+### 14.2. Nhóm Tài xế
 
 | BR | FR | UC | Quy tắc (QT) | AC | Ghi chú |
 |---|---|---|---|---|---|
@@ -1308,7 +1308,7 @@ Bảng này nối chuỗi: **Business Requirement (BR) → Functional Requiremen
 | BR-09 | FR-21 | UC-12 | QT-09 | AC-12-01, AC-12-02, AC-12-03 | ✅ Đầy đủ |
 | BR-10 | FR-22 | UC-13 | QT-08 | AC-13-01 | ✅ Đầy đủ |
 
-### 15.3. Nhóm Matching
+### 14.3. Nhóm Matching
 
 | BR | FR | UC | Quy tắc (QT) | AC | Ghi chú |
 |---|---|---|---|---|---|
@@ -1316,7 +1316,7 @@ Bảng này nối chuỗi: **Business Requirement (BR) → Functional Requiremen
 | BR-12 | FR-16 | UC-14 | QT-04 | AC-14-02, AC-14-03 | ✅ Đầy đủ |
 | BR-13 | FR-17 | UC-14 | QT-05 | AC-14-04 | ⚠️ Số lần thử tối đa chưa chốt |
 
-### 15.4. Nhóm Thanh toán
+### 14.4. Nhóm Thanh toán
 
 | BR | FR | UC | Quy tắc (QT) | AC | Ghi chú |
 |---|---|---|---|---|---|
@@ -1325,20 +1325,20 @@ Bảng này nối chuỗi: **Business Requirement (BR) → Functional Requiremen
 | BR-16 | FR-26 | UC-05 | QT-11 | AC-05-04 | ✅ Đầy đủ |
 | BR-17 | FR-27, FR-28 | UC-05 | QT-12, QT-13 | AC-05-03 | ✅ Đầy đủ |
 
-### 15.5. Nhóm Hủy chuyến
+### 14.5. Nhóm Hủy chuyến
 
 | BR | FR | UC | Quy tắc (QT) | AC | Ghi chú |
 |---|---|---|---|---|---|
 | *(không có BR riêng — phát sinh từ FR-11)* | FR-11 | UC-08 | QT-14, QT-15, QT-16 | AC-08-01, AC-08-02 | ⚠️ Chính sách phí hủy & điều kiện tài xế hủy chưa chốt |
 
-### 15.6. Nhóm Thông báo
+### 14.6. Nhóm Thông báo
 
 | BR | FR | UC | Quy tắc (QT) | AC | Ghi chú |
 |---|---|---|---|---|---|
 | BR-18 | FR-29, FR-30 | *(xuyên suốt UC-03, UC-12, UC-05, UC-08)* | QT-19 | *(nằm rải rác trong AC-12-01, AC-05-02...)* | Thông báo không có UC riêng, là hệ quả của các UC khác |
 | BR-19 | FR-31 | — | QT-20 | *(không phải AC chức năng — cần test tích hợp khi thêm kênh mới)* | Đây là yêu cầu kiến trúc, không test bằng Gherkin thông thường |
 
-### 15.7. Nhóm Quản trị
+### 14.7. Nhóm Quản trị
 
 | BR | FR | UC | Quy tắc (QT) | AC | Ghi chú |
 |---|---|---|---|---|---|
@@ -1346,7 +1346,7 @@ Bảng này nối chuỗi: **Business Requirement (BR) → Functional Requiremen
 | BR-21 | FR-35 | UC-19 | QT-21 | AC-19-01 | ✅ Đầy đủ |
 | BR-22 | FR-36 | UC-18 | — | AC-18-01 | ✅ Đầy đủ |
 
-### 15.8. Nhóm Phi chức năng (NFR) — không đi qua UC/AC dạng Gherkin
+### 14.8. Nhóm Phi chức năng (NFR) — không đi qua UC/AC dạng Gherkin
 
 | BR | NFR liên quan | Quy tắc (QT) | Cách kiểm chứng |
 |---|---|---|---|
@@ -1359,7 +1359,7 @@ Bảng này nối chuỗi: **Business Requirement (BR) → Functional Requiremen
 
 ---
 
-### 15.9. Tổng kết độ phủ (Coverage Summary)
+### 14.9. Tổng kết độ phủ (Coverage Summary)
 
 | Chỉ số | Số lượng |
 |---|---|
