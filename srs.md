@@ -1366,7 +1366,7 @@ Bảng này nối chuỗi: **Business Requirement (BR) → Functional Requiremen
 | BR phụ thuộc điểm nghiệp vụ **chưa chốt** với khách hàng | 5 (BR-11, BR-12→13 một phần, BR-14, và nhóm hủy chuyến) |
 | BR thuộc dạng phi chức năng, kiểm chứng bằng phương pháp khác (không phải Gherkin) | 6 (BR-23 → BR-28) |
 
-**Nhận xét quan trọng để đưa vào báo cáo:**
+**Nhận xét:**
 1. Các use case **cốt lõi** (đặt xe, matching, thanh toán, cập nhật trạng thái chuyến, đánh giá) đã có traceability đầy đủ từ BR → FR → UC → QT → AC — đây là phần nên ưu tiên code và test trước.
 2. Các use case CRUD đơn giản (hồ sơ, lịch sử, quản trị) có độ ưu tiên thấp hơn, có thể viết AC bổ sung sau khi phần lõi ổn định.
 3. **5 điểm nghiệp vụ chưa chốt** (đã lặp lại xuyên suốt từ Bước 1 đến giờ: công thức cước, tiêu chí ưu tiên tài xế, thời gian phản hồi, số lần thử matching, chính sách hủy chuyến) là **rủi ro lớn nhất của dự án** — nên đưa thành mục riêng trong báo cáo, đề xuất buổi làm việc với khách hàng để chốt trước khi bắt đầu sprint đầu tiên.
