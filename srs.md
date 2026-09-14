@@ -1,4 +1,4 @@
-## Bước 1 - Tìm hiểu nghiệp vụ
+## Bước 1 – Tìm hiểu nghiệp vụ
 
 ### 1.1 Vấn đề hiện tại của doanh nghiệp
 
@@ -44,9 +44,9 @@ Theo yêu cầu, doanh nghiệp **chưa chốt** các nội dung sau — Busines
 - Cách xử lý khi mất kết nối mạng (khách hàng hoặc tài xế)
 - Thời gian lưu trữ dữ liệu (lịch sử chuyến, vị trí, giao dịch...)
 
-## Bước 2  - Phân tích các bên liên quan
+## Bước 2 – Phân tích các bên liên quan
 
-## 2.1. Bảng Stakeholders
+### 2.1. Bảng Stakeholders
 
 | Stakeholder | Vai trò | Tương tác với hệ thống |
 |---|---|---|
@@ -59,7 +59,7 @@ Theo yêu cầu, doanh nghiệp **chưa chốt** các nội dung sau — Busines
 | **Nhà cung cấp dịch vụ thông báo (SMS/Email/Push provider)** | Bên thứ ba gửi thông báo | Tương tác qua API tích hợp; hệ thống gọi để gửi thông báo cho khách hàng/tài xế |
 | **Cơ quan quản lý / pháp lý** (giao thông, bảo vệ dữ liệu cá nhân) | Đặt ra quy định mà hệ thống phải tuân thủ | Không tương tác trực tiếp với hệ thống, nhưng chi phối yêu cầu về bảo mật dữ liệu, xác thực tài xế, lưu trữ dữ liệu |
 
-## 2.2. Ma trận Stakeholder (Mendelow Matrix)
+### 2.2. Ma trận Stakeholder (Mendelow Matrix)
 
 ```mermaid
 quadrantChart
@@ -407,7 +407,7 @@ Mỗi FR được nhóm theo **service/module** (đúng định hướng SOA đ�
 **Nhận xét:** Cách nhóm FR theo 7 module ở trên (User/Auth, Trip/Booking, Matching, Driver Operations, Payment, Notification, Admin & Reporting) chính là **7 service ứng viên** cho kiến trúc microservices — mỗi module này sẽ trở thành một service độc lập khi thiết kế kiến trúc ở các bước sau, và tập FR này sẽ là input trực tiếp để vẽ **Use Case Diagram** cho từng actor.
 
 
-## Bước 7 - Business Rules (Quy tắc nghiệp vụ)
+## Bước 7 – Business Rules (Quy tắc nghiệp vụ)
 
 Quy tắc nghiệp vụ mô tả **các ràng buộc, điều kiện, logic quyết định** đứng sau các FR — trả lời câu hỏi "khi nào thì làm gì, theo tiêu chí nào". Mình đánh dấu rõ quy tắc nào **đã có cơ sở từ yêu cầu khách hàng** và quy tắc nào **còn là giả định, cần khách hàng xác nhận** (đúng với các điểm tồn đọng đã ghi ở Bước 1 và Bước 4).
 
@@ -476,6 +476,75 @@ Quy tắc nghiệp vụ mô tả **các ràng buộc, điều kiện, logic quy�
 |---|---|---|
 | QT-25 | Mỗi service (matching, thanh toán, thông báo, quản trị...) phải hoạt động độc lập — lỗi ở một service không được lan sang service khác | ✅ Đã xác nhận |
 | QT-26 | Hệ thống phải cho phép triển khai cập nhật từng service riêng lẻ mà không cần dừng toàn bộ hệ thống | ✅ Đã xác nhận |
+
+---
+
+Sau khi đã liệt kê đầy đủ các quy tắc ở trên (7.1 → 7.8), phần dưới đây đi sâu hơn: phân loại quy tắc theo tính chất, gán trách nhiệm thực thi cho từng service (quan trọng với kiến trúc SOA — mỗi rule cần có "chủ sở hữu" rõ ràng), và làm rõ bằng decision table cho các quy tắc phức tạp nhất.
+
+### 7.9. Phân loại quy tắc nghiệp vụ theo tính chất
+
+| Loại | Ý nghĩa | Các quy tắc thuộc loại này |
+|---|---|---|
+| **Ràng buộc (Constraint)** | Giới hạn cái gì được phép/không được phép xảy ra | QT-01, QT-06, QT-09, QT-11, QT-14, QT-15, QT-18, QT-21 |
+| **Kích hoạt hành động (Action Enabler)** | "Nếu X xảy ra thì hệ thống phải làm Y" | QT-04, QT-05, QT-12, QT-16, QT-19, QT-20, QT-22, QT-25, QT-26 |
+| **Tính toán (Computation)** | Công thức/phép tính ra một giá trị | QT-02 (khoảng cách), QT-03 (đếm thời gian), QT-10 (cước phí), QT-24 (thời hạn lưu trữ) |
+| **Suy luận (Inference)** | Suy ra một trạng thái/sự thật từ các dữ kiện khác | QT-08 (tần suất → dữ liệu vị trí hợp lệ), QT-13 (trạng thái thanh toán suy từ phản hồi cổng/tài xế) |
+| **Định nghĩa / Điều kiện tiên quyết (Definition)** | Định nghĩa điều kiện để một thực thể được coi là "hợp lệ" | QT-07 (điều kiện để tài xế được bật sẵn sàng), QT-17 (điều kiện được đánh giá), QT-23 (chuẩn bảo mật dữ liệu) |
+
+**Vì sao phân loại này quan trọng:** loại **Constraint** thường code thành validation ở tầng service; loại **Action Enabler** thường code thành event-driven logic (rất hợp với kiến trúc microservices — 1 service publish event, service khác subscribe và hành động); loại **Computation** nên tách thành hàm/module riêng dễ test độc lập vì công thức có thể thay đổi (như QT-10 cước phí — chưa chốt); loại **Inference** cần cẩn thận vì trạng thái bị suy ra từ nhiều nguồn (dễ sinh race condition trong hệ phân tán).
+
+### 7.10. Ánh xạ Quy tắc → Service chịu trách nhiệm thực thi
+
+| Service | Quy tắc thực thi |
+|---|---|
+| **Matching Service** | QT-01, QT-02, QT-03, QT-04, QT-05, QT-06 |
+| **Booking/Trip Service** | QT-09, QT-14, QT-15, QT-16 |
+| **Driver Service** | QT-07, QT-08 |
+| **Payment Service** | QT-10, QT-11, QT-12, QT-13 |
+| **Rating Service** (hoặc module trong Trip Service) | QT-17, QT-18 |
+| **Notification Service** | QT-19, QT-20 |
+| **Auth/Admin Service** | QT-21, QT-22, QT-23, QT-24 |
+| **Toàn bộ kiến trúc (không riêng 1 service)** | QT-25, QT-26 — đây là nguyên tắc thiết kế hệ thống, không phải logic của 1 service cụ thể |
+
+> Nguyên tắc: **mỗi rule chỉ nên được thực thi ở đúng 1 service** (single source of truth). Ví dụ QT-06 ("1 tài xế chỉ nhận 1 chuyến") phải nằm trong Matching Service — nếu Booking Service cũng tự kiểm tra riêng, dễ dẫn đến 2 nơi có logic khác nhau, sai lệch dữ liệu khi 1 trong 2 được sửa mà quên sửa chỗ kia.
+
+### 7.11. Decision Table cho các quy tắc phức tạp nhất
+
+**a) QT-04 + QT-05 — Xử lý phản hồi của tài xế trong matching**
+
+| Điều kiện: Tài xế phản hồi | Điều kiện: Còn tài xế khác trong danh sách? | Hành động |
+|---|---|---|
+| Chấp nhận | — | Gán tài xế, Trip → "Đã có tài xế", dừng vòng lặp |
+| Từ chối / Timeout | Còn | Loại tài xế này, chuyển sang tài xế tiếp theo (QT-04) |
+| Từ chối / Timeout | Hết (đã thử đủ số lần — QT-05) | Trip → "Không tìm được tài xế", thông báo khách hàng |
+
+**b) QT-12 + QT-13 — Xử lý kết quả thanh toán điện tử**
+
+| Kết quả từ cổng thanh toán | Hành động |
+|---|---|
+| Thành công | Payment.status = success; Trip đánh dấu đã thanh toán (QT-13) |
+| Thất bại (cổng trả lỗi rõ ràng) | Payment.status = failed; cho khách hàng chọn: thử lại **hoặc** chuyển tiền mặt (QT-12) |
+| Timeout (không phản hồi) | Payment.status = failed (xử lý như thất bại); ghi log để đối soát thủ công sau, tránh double-charge nếu thực ra giao dịch đã thành công phía cổng |
+
+**c) QT-14/QT-15 — Điều kiện được phép hủy chuyến**
+
+| Trạng thái Trip hiện tại | Ai muốn hủy | Được phép hủy? |
+|---|---|---|
+| Đang tìm tài xế | Khách hàng | ✅ Được |
+| Đã có tài xế (chưa đón khách) | Khách hàng | ⚠️ Được, nhưng **chính sách phí hủy chưa chốt** — cần xác nhận |
+| Đã có tài xế (chưa đón khách) | Tài xế | ⚠️ Được trong "một số trường hợp nhất định" — **điều kiện cụ thể chưa chốt** (QT-15) |
+| Đang di chuyển trở đi | Bất kỳ | ❌ Không được hủy qua use case thông thường |
+
+**d) QT-09 — Ràng buộc thứ tự chuyển trạng thái chuyến**
+
+| Trạng thái hiện tại | Trạng thái được phép chuyển tới tiếp theo |
+|---|---|
+| Đã có tài xế | Đến điểm đón |
+| Đến điểm đón | Đã đón khách |
+| Đã đón khách | Đang di chuyển |
+| Đang di chuyển | Hoàn thành |
+
+→ Bất kỳ yêu cầu chuyển trạng thái nào **không theo đúng thứ tự này** đều bị hệ thống từ chối (validate ở Booking/Trip Service).
 
 ---
 
@@ -556,7 +625,205 @@ Quy tắc nghiệp vụ mô tả **các ràng buộc, điều kiện, logic quy�
 | Security (NFR-13 → 17) | → cần **Auth Service** riêng (JWT/OAuth), **audit log** tập trung |
 | Interoperability (NFR-23, 24) | → thiết kế **Payment Service** và **Notification Service** theo mô hình adapter, dễ cắm thêm provider mới |
 
-## Bước 9 – ERD (Thiết kế thực thể dữ liệu)
+## Bước 9 – Use Case Diagram
+
+```mermaid
+flowchart LR
+    Customer["Khach hang"]
+    Driver["Tai xe"]
+    Admin["Nhan vien van hanh"]
+    Gateway["Cong thanh toan (external)"]
+
+    subgraph SYS["CAB System"]
+        UC1([Dang ky / Dang nhap])
+        UC2([Cap nhat ho so])
+        UC3([Dat xe])
+        UC4([Theo doi chuyen di])
+        UC5([Thanh toan])
+        UC6([Xem lich su chuyen])
+        UC7([Danh gia tai xe])
+        UC8([Huy chuyen])
+
+        UC9([Cap nhat ho so va xe])
+        UC10([Bat tat trang thai san sang])
+        UC11([Nhan hoac tu choi chuyen])
+        UC12([Cap nhat trang thai chuyen])
+        UC13([Gui vi tri])
+
+        UC14([Tim va phan cong tai xe])
+
+        UC15([Quan ly khach hang])
+        UC16([Quan ly tai xe va xe])
+        UC17([Giam sat chuyen dang dien ra])
+        UC18([Xem bao cao])
+        UC19([Phan quyen nguoi dung])
+    end
+
+    Customer --> UC1
+    Customer --> UC2
+    Customer --> UC3
+    Customer --> UC4
+    Customer --> UC5
+    Customer --> UC6
+    Customer --> UC7
+    Customer --> UC8
+
+    Driver --> UC9
+    Driver --> UC10
+    Driver --> UC11
+    Driver --> UC12
+    Driver --> UC13
+
+    Admin --> UC15
+    Admin --> UC16
+    Admin --> UC17
+    Admin --> UC18
+    Admin --> UC19
+
+    UC3 -. include .-> UC14
+    UC11 -. include .-> UC14
+    UC5 -. include .-> Gateway
+    UC8 -. extend .-> UC3
+```
+
+**Giải thích các quan hệ `include`/`extend`:**
+
+| Quan hệ | Ý nghĩa |
+|---|---|
+| `Đặt xe -- include --> Tìm và phân công tài xế` | Mọi lần đặt xe **luôn kích hoạt** luồng matching (FR-09, FR-14) |
+| `Nhận hoặc từ chối chuyến -- include --> Tìm và phân công tài xế` | Khi tài xế từ chối/timeout, hệ thống **luôn quay lại** bước tìm tài xế khác (QT-04 fallback) |
+| `Thanh toán -- include --> Cổng thanh toán (external)` | Thanh toán điện tử **bắt buộc** gọi ra hệ thống bên ngoài (BR-15, QT-11) |
+| `Hủy chuyến -- extend --> Đặt xe` | Hủy chuyến là một **nhánh mở rộng tùy chọn** của luồng đặt xe, không phải lúc nào cũng xảy ra (QT-14) |
+
+## Bước 10 – Đặc tả Use Case
+
+---
+
+### UC-03: Đặt xe
+
+| Thuộc tính | Nội dung |
+|---|---|
+| **Actor chính** | Khách hàng |
+| **Actor phụ** | Matching Service (hệ thống) |
+| **Mô tả** | Khách hàng tạo yêu cầu đặt xe với điểm đón, điểm đến và loại xe |
+| **Điều kiện tiên quyết** | Khách hàng đã đăng nhập; không có chuyến nào đang hoạt động (trạng thái != đang di chuyển) |
+| **Điều kiện kết thúc (thành công)** | Yêu cầu chuyến được tạo với trạng thái "Đang tìm tài xế"; use case `Tìm và phân công tài xế` được kích hoạt |
+| **Luồng chính** | 1. Khách hàng nhập điểm đón, điểm đến<br>2. Khách hàng chọn loại xe<br>3. Hệ thống hiển thị ước tính cước (nếu có)<br>4. Khách hàng xác nhận đặt xe<br>5. Hệ thống tạo bản ghi Trip với trạng thái "Đang tìm tài xế"<br>6. Hệ thống gọi use case `Tìm và phân công tài xế` |
+| **Luồng thay thế** | A1. Nếu khách hàng đang có chuyến chưa hoàn thành → hệ thống từ chối tạo chuyến mới, hiển thị thông báo |
+| **Luồng ngoại lệ** | E1. Điểm đón/đến không hợp lệ (ngoài vùng phục vụ) → hệ thống báo lỗi, yêu cầu nhập lại |
+| **Quy tắc liên quan** | QT-06 (một tài xế chỉ nhận 1 chuyến — áp dụng gián tiếp), BR-02 |
+
+---
+
+### UC-14: Tìm và phân công tài xế (Matching)
+
+| Thuộc tính | Nội dung |
+|---|---|
+| **Actor chính** | Hệ thống (Matching Service) |
+| **Actor phụ** | Tài xế |
+| **Mô tả** | Hệ thống tự động tìm tài xế phù hợp và gửi yêu cầu chuyến |
+| **Điều kiện tiên quyết** | Trip đã được tạo với trạng thái "Đang tìm tài xế" |
+| **Điều kiện kết thúc (thành công)** | Có tài xế chấp nhận chuyến; Trip chuyển trạng thái "Đã có tài xế" |
+| **Luồng chính** | 1. Hệ thống lấy danh sách tài xế đang "sẵn sàng", gần điểm đón nhất<br>2. Hệ thống tạo `MATCHING_ATTEMPT` và gửi yêu cầu đến tài xế đầu danh sách<br>3. Hệ thống chờ phản hồi trong thời gian giới hạn (QT-03)<br>4. Tài xế chấp nhận → cập nhật Trip.driver_id, chuyển trạng thái "Đã có tài xế"<br>5. Hệ thống gửi thông báo cho khách hàng (tài xế đã nhận chuyến) |
+| **Luồng thay thế** | A1. Tài xế từ chối hoặc hết thời gian phản hồi → đánh dấu `MATCHING_ATTEMPT` là "rejected/timeout" → quay lại bước 1 với tài xế tiếp theo (QT-04) |
+| **Luồng ngoại lệ** | E1. Không còn tài xế nào trong danh sách sau [n] lần thử (QT-05) → Trip chuyển trạng thái "Không tìm được tài xế" → gửi thông báo cho khách hàng (BR-13) |
+| **Quy tắc liên quan** | QT-01, QT-02, QT-03, QT-04, QT-05, QT-06 |
+
+---
+
+### UC-11: Nhận / Từ chối chuyến
+
+| Thuộc tính | Nội dung |
+|---|---|
+| **Actor chính** | Tài xế |
+| **Mô tả** | Tài xế xem thông tin chuyến được đề xuất và quyết định chấp nhận hay từ chối |
+| **Điều kiện tiên quyết** | Tài xế đang ở trạng thái "sẵn sàng"; có `MATCHING_ATTEMPT` đang chờ phản hồi dành cho tài xế này |
+| **Điều kiện kết thúc** | `MATCHING_ATTEMPT` được cập nhật trạng thái accepted/rejected |
+| **Luồng chính** | 1. Hệ thống hiển thị thông tin chuyến (điểm đón, khoảng cách ước tính) cho tài xế<br>2. Tài xế nhấn "Chấp nhận" trong thời gian cho phép<br>3. Hệ thống cập nhật `MATCHING_ATTEMPT` = accepted, chuyển tài xế sang trạng thái "đang thực hiện chuyến" |
+| **Luồng thay thế** | A1. Tài xế nhấn "Từ chối" → cập nhật `MATCHING_ATTEMPT` = rejected, tài xế vẫn ở trạng thái "sẵn sàng"<br>A2. Hết thời gian phản hồi mà tài xế không thao tác → hệ thống tự động đánh dấu "timeout" (như từ chối) |
+| **Quy tắc liên quan** | QT-03, QT-04 |
+
+---
+
+### UC-12: Cập nhật trạng thái chuyến
+
+| Thuộc tính | Nội dung |
+|---|---|
+| **Actor chính** | Tài xế |
+| **Mô tả** | Tài xế cập nhật các mốc trạng thái trong suốt chuyến đi |
+| **Điều kiện tiên quyết** | Tài xế đã chấp nhận chuyến (Trip.status = "Đã có tài xế") |
+| **Điều kiện kết thúc** | Trip đạt trạng thái "Hoàn thành"; kích hoạt use case Thanh toán |
+| **Luồng chính** | 1. Tài xế chọn "Đã đến điểm đón" → hệ thống gửi thông báo cho khách hàng<br>2. Tài xế chọn "Đã đón khách" → Trip chuyển "Đang di chuyển", ghi started_at<br>3. Trong lúc di chuyển, hệ thống ghi nhận vị trí liên tục (UC-13)<br>4. Tài xế chọn "Hoàn thành chuyến" → Trip chuyển "Hoàn thành", ghi completed_at, tính distance_km<br>5. Hệ thống kích hoạt use case Thanh toán |
+| **Luồng ngoại lệ** | E1. Tài xế cố chuyển trạng thái không đúng thứ tự (ví dụ "Hoàn thành" khi chưa "Đón khách") → hệ thống từ chối thao tác (QT-09) |
+| **Quy tắc liên quan** | QT-09 |
+
+---
+
+### UC-05: Thanh toán
+
+| Thuộc tính | Nội dung |
+|---|---|
+| **Actor chính** | Khách hàng |
+| **Actor phụ** | Cổng thanh toán bên thứ ba (external) |
+| **Mô tả** | Xử lý thanh toán sau khi chuyến hoàn thành |
+| **Điều kiện tiên quyết** | Trip.status = "Hoàn thành"; cước phí đã được tính |
+| **Điều kiện kết thúc (thành công)** | Payment.status = "success"; Trip được đánh dấu đã thanh toán |
+| **Luồng chính** | 1. Hệ thống tính cước (total_fare) dựa trên distance_km, duration_min (QT-10 — công thức cần xác nhận)<br>2. Khách hàng chọn phương thức: Tiền mặt hoặc Điện tử<br>3a. Nếu Tiền mặt: tài xế xác nhận đã nhận tiền → Payment.status = "success"<br>3b. Nếu Điện tử: hệ thống gọi API cổng thanh toán bên thứ ba<br>4. Cổng thanh toán trả kết quả → Payment.status cập nhật theo kết quả<br>5. Hệ thống gửi thông báo kết quả thanh toán cho khách hàng |
+| **Luồng ngoại lệ** | E1. Giao dịch điện tử thất bại → Payment.status = "failed", hệ thống cho phép thử lại hoặc chuyển sang tiền mặt (QT-12)<br>E2. Cổng thanh toán không phản hồi (timeout) → xử lý như thất bại, ghi log để đối soát sau |
+| **Quy tắc liên quan** | QT-10, QT-11, QT-12, QT-13 |
+
+---
+
+### UC-08: Hủy chuyến
+
+| Thuộc tính | Nội dung |
+|---|---|
+| **Actor chính** | Khách hàng |
+| **Actor phụ** | Tài xế (nhận thông báo nếu đã được gán) |
+| **Mô tả** | Khách hàng hủy yêu cầu chuyến đã tạo |
+| **Điều kiện tiên quyết** | Trip.status thuộc {Đang tìm tài xế, Đã có tài xế} — chưa đến trạng thái "Đang di chuyển" *(ranh giới chính xác cần khách hàng xác nhận — QT-14)* |
+| **Điều kiện kết thúc** | Trip.status = "Đã hủy", ghi cancelled_reason |
+| **Luồng chính** | 1. Khách hàng chọn "Hủy chuyến" và nêu lý do (tùy chọn)<br>2. Hệ thống kiểm tra điều kiện được phép hủy<br>3. Trip chuyển trạng thái "Đã hủy"<br>4. Nếu đã có tài xế được gán → gửi thông báo hủy cho tài xế, tài xế quay lại trạng thái "sẵn sàng" |
+| **Luồng ngoại lệ** | E1. Chuyến đã ở trạng thái "Đang di chuyển" trở đi → không cho phép hủy qua use case này, hiển thị thông báo |
+| **Quy tắc liên quan** | QT-14, QT-16 (⚠️ chính sách hủy — điều kiện, phí hủy — chưa chốt, cần xác nhận thêm) |
+
+---
+
+### UC-07: Đánh giá tài xế
+
+| Thuộc tính | Nội dung |
+|---|---|
+| **Actor chính** | Khách hàng |
+| **Mô tả** | Khách hàng đánh giá tài xế sau khi hoàn thành chuyến |
+| **Điều kiện tiên quyết** | Trip.status = "Hoàn thành"; chuyến chưa được đánh giá trước đó |
+| **Điều kiện kết thúc** | Bản ghi `RATING` được tạo; rating_avg của tài xế được cập nhật |
+| **Luồng chính** | 1. Hệ thống hiển thị màn hình đánh giá sau khi chuyến hoàn thành<br>2. Khách hàng chọn số sao (1-5) và nhập nhận xét (tùy chọn)<br>3. Hệ thống lưu `RATING`, tính lại rating_avg của tài xế |
+| **Luồng ngoại lệ** | E1. Khách hàng cố đánh giá lại chuyến đã đánh giá → hệ thống từ chối (QT-18) |
+| **Quy tắc liên quan** | QT-17, QT-18 |
+
+---
+
+### Tóm tắt các use case còn lại (CRUD/đơn giản, không có nhánh phức tạp)
+
+| Mã | Tên | Actor | Ghi chú ngắn |
+|---|---|---|---|
+| UC-01 | Đăng ký / Đăng nhập | Khách hàng, Tài xế | Xác thực qua Account Service; điều kiện kết thúc: có session hợp lệ |
+| UC-02 | Cập nhật hồ sơ (khách hàng) | Khách hàng | CRUD thông tin cá nhân |
+| UC-04 | Theo dõi chuyến đi | Khách hàng | Chỉ đọc dữ liệu (real-time) từ Trip + Driver location |
+| UC-06 | Xem lịch sử chuyến | Khách hàng | Chỉ đọc, có thể lọc theo thời gian |
+| UC-09 | Cập nhật hồ sơ & xe (tài xế) | Tài xế | CRUD, có validate giấy tờ (QT-07) |
+| UC-10 | Bật/tắt trạng thái sẵn sàng | Tài xế | Điều kiện: đã cập nhật đủ hồ sơ (QT-07) |
+| UC-13 | Gửi vị trí | Tài xế | Gửi định kỳ (QT-08), ghi vào `DRIVER_LOCATION_LOG` |
+| UC-15 | Quản lý khách hàng | Nhân viên vận hành | CRUD + tìm kiếm |
+| UC-16 | Quản lý tài xế & xe | Nhân viên vận hành | CRUD + duyệt hồ sơ tài xế |
+| UC-17 | Giám sát chuyến đang diễn ra | Nhân viên vận hành | Chỉ đọc, có thể can thiệp khi có sự cố (hủy hộ, gán lại tài xế) |
+| UC-18 | Xem báo cáo | Nhân viên vận hành | Tổng hợp từ Trip, Payment, Rating theo khoảng thời gian |
+| UC-19 | Phân quyền người dùng | Nhân viên vận hành (cấp cao) | Quản lý vai trò/quyền trong `ADMIN_USER` |
+
+---
+
+
+## Bước 11 – ERD (Thiết kế thực thể dữ liệu)
 
 ```mermaid
 erDiagram
@@ -717,206 +984,11 @@ erDiagram
 | `AUDIT_LOG` gắn với `ADMIN_USER` | Ghi vết mọi thao tác nhạy cảm (**QT-22, NFR-17**) |
 | `total_fare` nằm trong `TRIP` thay vì bảng `FARE` riêng | Đơn giản hóa vì công thức tính cước **chưa được khách hàng chốt** (QT-10) — khi công thức rõ ràng hơn (nhiều thành phần: giá mở cửa, phụ phí giờ cao điểm...) có thể tách thành bảng `FARE_BREAKDOWN` riêng |
 
-## Bước 10 – Use Case Diagram
-
-```mermaid
-flowchart LR
-    Customer["Khach hang"]
-    Driver["Tai xe"]
-    Admin["Nhan vien van hanh"]
-    Gateway["Cong thanh toan (external)"]
-
-    subgraph SYS["CAB System"]
-        UC1([Dang ky / Dang nhap])
-        UC2([Cap nhat ho so])
-        UC3([Dat xe])
-        UC4([Theo doi chuyen di])
-        UC5([Thanh toan])
-        UC6([Xem lich su chuyen])
-        UC7([Danh gia tai xe])
-        UC8([Huy chuyen])
-
-        UC9([Cap nhat ho so va xe])
-        UC10([Bat tat trang thai san sang])
-        UC11([Nhan hoac tu choi chuyen])
-        UC12([Cap nhat trang thai chuyen])
-        UC13([Gui vi tri])
-
-        UC14([Tim va phan cong tai xe])
-
-        UC15([Quan ly khach hang])
-        UC16([Quan ly tai xe va xe])
-        UC17([Giam sat chuyen dang dien ra])
-        UC18([Xem bao cao])
-        UC19([Phan quyen nguoi dung])
-    end
-
-    Customer --> UC1
-    Customer --> UC2
-    Customer --> UC3
-    Customer --> UC4
-    Customer --> UC5
-    Customer --> UC6
-    Customer --> UC7
-    Customer --> UC8
-
-    Driver --> UC9
-    Driver --> UC10
-    Driver --> UC11
-    Driver --> UC12
-    Driver --> UC13
-
-    Admin --> UC15
-    Admin --> UC16
-    Admin --> UC17
-    Admin --> UC18
-    Admin --> UC19
-
-    UC3 -. include .-> UC14
-    UC11 -. include .-> UC14
-    UC5 -. include .-> Gateway
-    UC8 -. extend .-> UC3
-```
-
-**Giải thích các quan hệ `include`/`extend`:**
-
-| Quan hệ | Ý nghĩa |
-|---|---|
-| `Đặt xe -- include --> Tìm và phân công tài xế` | Mọi lần đặt xe **luôn kích hoạt** luồng matching (FR-09, FR-14) |
-| `Nhận hoặc từ chối chuyến -- include --> Tìm và phân công tài xế` | Khi tài xế từ chối/timeout, hệ thống **luôn quay lại** bước tìm tài xế khác (QT-04 fallback) |
-| `Thanh toán -- include --> Cổng thanh toán (external)` | Thanh toán điện tử **bắt buộc** gọi ra hệ thống bên ngoài (BR-15, QT-11) |
-| `Hủy chuyến -- extend --> Đặt xe` | Hủy chuyến là một **nhánh mở rộng tùy chọn** của luồng đặt xe, không phải lúc nào cũng xảy ra (QT-14) |
-
-## Bước 11 – Đặc tả Use Case
-
----
-
-### UC-03: Đặt xe
-
-| Thuộc tính | Nội dung |
-|---|---|
-| **Actor chính** | Khách hàng |
-| **Actor phụ** | Matching Service (hệ thống) |
-| **Mô tả** | Khách hàng tạo yêu cầu đặt xe với điểm đón, điểm đến và loại xe |
-| **Điều kiện tiên quyết** | Khách hàng đã đăng nhập; không có chuyến nào đang hoạt động (trạng thái != đang di chuyển) |
-| **Điều kiện kết thúc (thành công)** | Yêu cầu chuyến được tạo với trạng thái "Đang tìm tài xế"; use case `Tìm và phân công tài xế` được kích hoạt |
-| **Luồng chính** | 1. Khách hàng nhập điểm đón, điểm đến<br>2. Khách hàng chọn loại xe<br>3. Hệ thống hiển thị ước tính cước (nếu có)<br>4. Khách hàng xác nhận đặt xe<br>5. Hệ thống tạo bản ghi Trip với trạng thái "Đang tìm tài xế"<br>6. Hệ thống gọi use case `Tìm và phân công tài xế` |
-| **Luồng thay thế** | A1. Nếu khách hàng đang có chuyến chưa hoàn thành → hệ thống từ chối tạo chuyến mới, hiển thị thông báo |
-| **Luồng ngoại lệ** | E1. Điểm đón/đến không hợp lệ (ngoài vùng phục vụ) → hệ thống báo lỗi, yêu cầu nhập lại |
-| **Quy tắc liên quan** | QT-06 (một tài xế chỉ nhận 1 chuyến — áp dụng gián tiếp), BR-02 |
-
----
-
-### UC-14: Tìm và phân công tài xế (Matching)
-
-| Thuộc tính | Nội dung |
-|---|---|
-| **Actor chính** | Hệ thống (Matching Service) |
-| **Actor phụ** | Tài xế |
-| **Mô tả** | Hệ thống tự động tìm tài xế phù hợp và gửi yêu cầu chuyến |
-| **Điều kiện tiên quyết** | Trip đã được tạo với trạng thái "Đang tìm tài xế" |
-| **Điều kiện kết thúc (thành công)** | Có tài xế chấp nhận chuyến; Trip chuyển trạng thái "Đã có tài xế" |
-| **Luồng chính** | 1. Hệ thống lấy danh sách tài xế đang "sẵn sàng", gần điểm đón nhất<br>2. Hệ thống tạo `MATCHING_ATTEMPT` và gửi yêu cầu đến tài xế đầu danh sách<br>3. Hệ thống chờ phản hồi trong thời gian giới hạn (QT-03)<br>4. Tài xế chấp nhận → cập nhật Trip.driver_id, chuyển trạng thái "Đã có tài xế"<br>5. Hệ thống gửi thông báo cho khách hàng (tài xế đã nhận chuyến) |
-| **Luồng thay thế** | A1. Tài xế từ chối hoặc hết thời gian phản hồi → đánh dấu `MATCHING_ATTEMPT` là "rejected/timeout" → quay lại bước 1 với tài xế tiếp theo (QT-04) |
-| **Luồng ngoại lệ** | E1. Không còn tài xế nào trong danh sách sau [n] lần thử (QT-05) → Trip chuyển trạng thái "Không tìm được tài xế" → gửi thông báo cho khách hàng (BR-13) |
-| **Quy tắc liên quan** | QT-01, QT-02, QT-03, QT-04, QT-05, QT-06 |
-
----
-
-### UC-11: Nhận / Từ chối chuyến
-
-| Thuộc tính | Nội dung |
-|---|---|
-| **Actor chính** | Tài xế |
-| **Mô tả** | Tài xế xem thông tin chuyến được đề xuất và quyết định chấp nhận hay từ chối |
-| **Điều kiện tiên quyết** | Tài xế đang ở trạng thái "sẵn sàng"; có `MATCHING_ATTEMPT` đang chờ phản hồi dành cho tài xế này |
-| **Điều kiện kết thúc** | `MATCHING_ATTEMPT` được cập nhật trạng thái accepted/rejected |
-| **Luồng chính** | 1. Hệ thống hiển thị thông tin chuyến (điểm đón, khoảng cách ước tính) cho tài xế<br>2. Tài xế nhấn "Chấp nhận" trong thời gian cho phép<br>3. Hệ thống cập nhật `MATCHING_ATTEMPT` = accepted, chuyển tài xế sang trạng thái "đang thực hiện chuyến" |
-| **Luồng thay thế** | A1. Tài xế nhấn "Từ chối" → cập nhật `MATCHING_ATTEMPT` = rejected, tài xế vẫn ở trạng thái "sẵn sàng"<br>A2. Hết thời gian phản hồi mà tài xế không thao tác → hệ thống tự động đánh dấu "timeout" (như từ chối) |
-| **Quy tắc liên quan** | QT-03, QT-04 |
-
----
-
-### UC-12: Cập nhật trạng thái chuyến
-
-| Thuộc tính | Nội dung |
-|---|---|
-| **Actor chính** | Tài xế |
-| **Mô tả** | Tài xế cập nhật các mốc trạng thái trong suốt chuyến đi |
-| **Điều kiện tiên quyết** | Tài xế đã chấp nhận chuyến (Trip.status = "Đã có tài xế") |
-| **Điều kiện kết thúc** | Trip đạt trạng thái "Hoàn thành"; kích hoạt use case Thanh toán |
-| **Luồng chính** | 1. Tài xế chọn "Đã đến điểm đón" → hệ thống gửi thông báo cho khách hàng<br>2. Tài xế chọn "Đã đón khách" → Trip chuyển "Đang di chuyển", ghi started_at<br>3. Trong lúc di chuyển, hệ thống ghi nhận vị trí liên tục (UC-13)<br>4. Tài xế chọn "Hoàn thành chuyến" → Trip chuyển "Hoàn thành", ghi completed_at, tính distance_km<br>5. Hệ thống kích hoạt use case Thanh toán |
-| **Luồng ngoại lệ** | E1. Tài xế cố chuyển trạng thái không đúng thứ tự (ví dụ "Hoàn thành" khi chưa "Đón khách") → hệ thống từ chối thao tác (QT-09) |
-| **Quy tắc liên quan** | QT-09 |
-
----
-
-### UC-05: Thanh toán
-
-| Thuộc tính | Nội dung |
-|---|---|
-| **Actor chính** | Khách hàng |
-| **Actor phụ** | Cổng thanh toán bên thứ ba (external) |
-| **Mô tả** | Xử lý thanh toán sau khi chuyến hoàn thành |
-| **Điều kiện tiên quyết** | Trip.status = "Hoàn thành"; cước phí đã được tính |
-| **Điều kiện kết thúc (thành công)** | Payment.status = "success"; Trip được đánh dấu đã thanh toán |
-| **Luồng chính** | 1. Hệ thống tính cước (total_fare) dựa trên distance_km, duration_min (QT-10 — công thức cần xác nhận)<br>2. Khách hàng chọn phương thức: Tiền mặt hoặc Điện tử<br>3a. Nếu Tiền mặt: tài xế xác nhận đã nhận tiền → Payment.status = "success"<br>3b. Nếu Điện tử: hệ thống gọi API cổng thanh toán bên thứ ba<br>4. Cổng thanh toán trả kết quả → Payment.status cập nhật theo kết quả<br>5. Hệ thống gửi thông báo kết quả thanh toán cho khách hàng |
-| **Luồng ngoại lệ** | E1. Giao dịch điện tử thất bại → Payment.status = "failed", hệ thống cho phép thử lại hoặc chuyển sang tiền mặt (QT-12)<br>E2. Cổng thanh toán không phản hồi (timeout) → xử lý như thất bại, ghi log để đối soát sau |
-| **Quy tắc liên quan** | QT-10, QT-11, QT-12, QT-13 |
-
----
-
-### UC-08: Hủy chuyến
-
-| Thuộc tính | Nội dung |
-|---|---|
-| **Actor chính** | Khách hàng |
-| **Actor phụ** | Tài xế (nhận thông báo nếu đã được gán) |
-| **Mô tả** | Khách hàng hủy yêu cầu chuyến đã tạo |
-| **Điều kiện tiên quyết** | Trip.status thuộc {Đang tìm tài xế, Đã có tài xế} — chưa đến trạng thái "Đang di chuyển" *(ranh giới chính xác cần khách hàng xác nhận — QT-14)* |
-| **Điều kiện kết thúc** | Trip.status = "Đã hủy", ghi cancelled_reason |
-| **Luồng chính** | 1. Khách hàng chọn "Hủy chuyến" và nêu lý do (tùy chọn)<br>2. Hệ thống kiểm tra điều kiện được phép hủy<br>3. Trip chuyển trạng thái "Đã hủy"<br>4. Nếu đã có tài xế được gán → gửi thông báo hủy cho tài xế, tài xế quay lại trạng thái "sẵn sàng" |
-| **Luồng ngoại lệ** | E1. Chuyến đã ở trạng thái "Đang di chuyển" trở đi → không cho phép hủy qua use case này, hiển thị thông báo |
-| **Quy tắc liên quan** | QT-14, QT-16 (⚠️ chính sách hủy — điều kiện, phí hủy — chưa chốt, cần xác nhận thêm) |
-
----
-
-### UC-07: Đánh giá tài xế
-
-| Thuộc tính | Nội dung |
-|---|---|
-| **Actor chính** | Khách hàng |
-| **Mô tả** | Khách hàng đánh giá tài xế sau khi hoàn thành chuyến |
-| **Điều kiện tiên quyết** | Trip.status = "Hoàn thành"; chuyến chưa được đánh giá trước đó |
-| **Điều kiện kết thúc** | Bản ghi `RATING` được tạo; rating_avg của tài xế được cập nhật |
-| **Luồng chính** | 1. Hệ thống hiển thị màn hình đánh giá sau khi chuyến hoàn thành<br>2. Khách hàng chọn số sao (1-5) và nhập nhận xét (tùy chọn)<br>3. Hệ thống lưu `RATING`, tính lại rating_avg của tài xế |
-| **Luồng ngoại lệ** | E1. Khách hàng cố đánh giá lại chuyến đã đánh giá → hệ thống từ chối (QT-18) |
-| **Quy tắc liên quan** | QT-17, QT-18 |
-
----
-
-### Tóm tắt các use case còn lại (CRUD/đơn giản, không có nhánh phức tạp)
-
-| Mã | Tên | Actor | Ghi chú ngắn |
-|---|---|---|---|
-| UC-01 | Đăng ký / Đăng nhập | Khách hàng, Tài xế | Xác thực qua Account Service; điều kiện kết thúc: có session hợp lệ |
-| UC-02 | Cập nhật hồ sơ (khách hàng) | Khách hàng | CRUD thông tin cá nhân |
-| UC-04 | Theo dõi chuyến đi | Khách hàng | Chỉ đọc dữ liệu (real-time) từ Trip + Driver location |
-| UC-06 | Xem lịch sử chuyến | Khách hàng | Chỉ đọc, có thể lọc theo thời gian |
-| UC-09 | Cập nhật hồ sơ & xe (tài xế) | Tài xế | CRUD, có validate giấy tờ (QT-07) |
-| UC-10 | Bật/tắt trạng thái sẵn sàng | Tài xế | Điều kiện: đã cập nhật đủ hồ sơ (QT-07) |
-| UC-13 | Gửi vị trí | Tài xế | Gửi định kỳ (QT-08), ghi vào `DRIVER_LOCATION_LOG` |
-| UC-15 | Quản lý khách hàng | Nhân viên vận hành | CRUD + tìm kiếm |
-| UC-16 | Quản lý tài xế & xe | Nhân viên vận hành | CRUD + duyệt hồ sơ tài xế |
-| UC-17 | Giám sát chuyến đang diễn ra | Nhân viên vận hành | Chỉ đọc, có thể can thiệp khi có sự cố (hủy hộ, gán lại tài xế) |
-| UC-18 | Xem báo cáo | Nhân viên vận hành | Tổng hợp từ Trip, Payment, Rating theo khoảng thời gian |
-| UC-19 | Phân quyền người dùng | Nhân viên vận hành (cấp cao) | Quản lý vai trò/quyền trong `ADMIN_USER` |
-
----
-
-
 ## Bước 12 – Phân tích quy trình nghiệp vụ (Sequence Diagram)
-## 12.1. Quy trình Đặt xe & Tìm tài xế
+
+> **Lưu ý:** Bước 5 (Mô hình nghiệp vụ) đã có flowchart tổng quan cho toàn bộ quy trình. Ở bước này, mình đi sâu hơn — dùng **Sequence Diagram** để thể hiện rõ thứ tự thời gian và thông điệp trao đổi giữa từng service, làm input trực tiếp cho việc thiết kế API giữa các service.
+
+### 12.1. Quy trình Đặt xe & Tìm tài xế
 
 ```mermaid
 sequenceDiagram
@@ -949,7 +1021,7 @@ sequenceDiagram
     end
 ```
 
-## 12.2. Quy trình Thực hiện chuyến đi
+### 12.2. Quy trình Thực hiện chuyến đi
 
 ```mermaid
 sequenceDiagram
@@ -975,7 +1047,7 @@ sequenceDiagram
     BS->>PS: Yeu cau tinh cuoc va thanh toan
 ```
 
-## 12.3. Quy trình Thanh toán
+### 12.3. Quy trình Thanh toán
 
 ```mermaid
 sequenceDiagram
@@ -1008,7 +1080,7 @@ sequenceDiagram
     NT-->>KH: Thong bao: Ket qua thanh toan
 ```
 
-## 12.4. Quy trình Hủy chuyến
+### 12.4. Quy trình Hủy chuyến
 
 ```mermaid
 sequenceDiagram
@@ -1032,76 +1104,7 @@ sequenceDiagram
     end
 ```
 
-## Bước 13 – Phân tích các quy tắc nghiệp vụ
-
-### 13.1. Phân loại quy tắc nghiệp vụ theo tính chất
-
-| Loại | Ý nghĩa | Các quy tắc thuộc loại này |
-|---|---|---|
-| **Ràng buộc (Constraint)** | Giới hạn cái gì được phép/không được phép xảy ra | QT-01, QT-06, QT-09, QT-11, QT-14, QT-15, QT-18, QT-21 |
-| **Kích hoạt hành động (Action Enabler)** | "Nếu X xảy ra thì hệ thống phải làm Y" | QT-04, QT-05, QT-12, QT-16, QT-19, QT-20, QT-22, QT-25, QT-26 |
-| **Tính toán (Computation)** | Công thức/phép tính ra một giá trị | QT-02 (khoảng cách), QT-03 (đếm thời gian), QT-10 (cước phí), QT-24 (thời hạn lưu trữ) |
-| **Suy luận (Inference)** | Suy ra một trạng thái/sự thật từ các dữ kiện khác | QT-08 (tần suất → dữ liệu vị trí hợp lệ), QT-13 (trạng thái thanh toán suy từ phản hồi cổng/tài xế) |
-| **Định nghĩa / Điều kiện tiên quyết (Definition)** | Định nghĩa điều kiện để một thực thể được coi là "hợp lệ" | QT-07 (điều kiện để tài xế được bật sẵn sàng), QT-17 (điều kiện được đánh giá), QT-23 (chuẩn bảo mật dữ liệu) |
-
-**Vì sao phân loại này quan trọng:** loại **Constraint** thường code thành validation ở tầng service; loại **Action Enabler** thường code thành event-driven logic (rất hợp với kiến trúc microservices — 1 service publish event, service khác subscribe và hành động); loại **Computation** nên tách thành hàm/module riêng dễ test độc lập vì công thức có thể thay đổi (như QT-10 cước phí — chưa chốt); loại **Inference** cần cẩn thận vì trạng thái bị suy ra từ nhiều nguồn (dễ sinh race condition trong hệ phân tán).
-
-### 13.2. Ánh xạ Quy tắc → Service chịu trách nhiệm thực thi
-
-| Service | Quy tắc thực thi |
-|---|---|
-| **Matching Service** | QT-01, QT-02, QT-03, QT-04, QT-05, QT-06 |
-| **Booking/Trip Service** | QT-09, QT-14, QT-15, QT-16 |
-| **Driver Service** | QT-07, QT-08 |
-| **Payment Service** | QT-10, QT-11, QT-12, QT-13 |
-| **Rating Service** (hoặc module trong Trip Service) | QT-17, QT-18 |
-| **Notification Service** | QT-19, QT-20 |
-| **Auth/Admin Service** | QT-21, QT-22, QT-23, QT-24 |
-| **Toàn bộ kiến trúc (không riêng 1 service)** | QT-25, QT-26 — đây là nguyên tắc thiết kế hệ thống, không phải logic của 1 service cụ thể |
-
-> Nguyên tắc: **mỗi rule chỉ nên được thực thi ở đúng 1 service** (single source of truth). Ví dụ QT-06 ("1 tài xế chỉ nhận 1 chuyến") phải nằm trong Matching Service — nếu Booking Service cũng tự kiểm tra riêng, dễ dẫn đến 2 nơi có logic khác nhau, sai lệch dữ liệu khi 1 trong 2 được sửa mà quên sửa chỗ kia.
-
-### 13.3. Decision Table cho các quy tắc phức tạp nhất
-
-**a) QT-04 + QT-05 — Xử lý phản hồi của tài xế trong matching**
-
-| Điều kiện: Tài xế phản hồi | Điều kiện: Còn tài xế khác trong danh sách? | Hành động |
-|---|---|---|
-| Chấp nhận | — | Gán tài xế, Trip → "Đã có tài xế", dừng vòng lặp |
-| Từ chối / Timeout | Còn | Loại tài xế này, chuyển sang tài xế tiếp theo (QT-04) |
-| Từ chối / Timeout | Hết (đã thử đủ số lần — QT-05) | Trip → "Không tìm được tài xế", thông báo khách hàng |
-
-**b) QT-12 + QT-13 — Xử lý kết quả thanh toán điện tử**
-
-| Kết quả từ cổng thanh toán | Hành động |
-|---|---|
-| Thành công | Payment.status = success; Trip đánh dấu đã thanh toán (QT-13) |
-| Thất bại (cổng trả lỗi rõ ràng) | Payment.status = failed; cho khách hàng chọn: thử lại **hoặc** chuyển tiền mặt (QT-12) |
-| Timeout (không phản hồi) | Payment.status = failed (xử lý như thất bại); ghi log để đối soát thủ công sau, tránh double-charge nếu thực ra giao dịch đã thành công phía cổng |
-
-**c) QT-14/QT-15 — Điều kiện được phép hủy chuyến**
-
-| Trạng thái Trip hiện tại | Ai muốn hủy | Được phép hủy? |
-|---|---|---|
-| Đang tìm tài xế | Khách hàng | ✅ Được |
-| Đã có tài xế (chưa đón khách) | Khách hàng | ⚠️ Được, nhưng **chính sách phí hủy chưa chốt** — cần xác nhận |
-| Đã có tài xế (chưa đón khách) | Tài xế | ⚠️ Được trong "một số trường hợp nhất định" — **điều kiện cụ thể chưa chốt** (QT-15) |
-| Đang di chuyển trở đi | Bất kỳ | ❌ Không được hủy qua use case thông thường |
-
-**d) QT-09 — Ràng buộc thứ tự chuyển trạng thái chuyến**
-
-| Trạng thái hiện tại | Trạng thái được phép chuyển tới tiếp theo |
-|---|---|
-| Đã có tài xế | Đến điểm đón |
-| Đến điểm đón | Đã đón khách |
-| Đã đón khách | Đang di chuyển |
-| Đang di chuyển | Hoàn thành |
-
-→ Bất kỳ yêu cầu chuyển trạng thái nào **không theo đúng thứ tự này** đều bị hệ thống từ chối (validate ở Booking/Trip Service).
-
----
-
-## Bước 14 – Acceptance Criteria (AC)
+## Bước 13 – Acceptance Criteria (AC)
 ### AC cho UC-03: Đặt xe
 
 ```gherkin
@@ -1281,7 +1284,7 @@ Scenario: AC-22-01 - Ghi audit log cho thao tac nhay cam
 
 ---
 
-## Bước 15 – Bảng truy vết (Traceability Matrix)
+## Bước 14 – Bảng truy vết (Traceability Matrix)
 
 Bảng này nối chuỗi: **Business Requirement (BR) → Functional Requirement (FR) → Use Case (UC) → Business Rule (QT) → Acceptance Criteria (AC)** — mục đích là chứng minh **không có yêu cầu nào bị "rơi rớt"** qua các bước phân tích, và ngược lại, không có gì được code mà không xuất phát từ một yêu cầu gốc.
 
@@ -1370,4 +1373,3 @@ Bảng này nối chuỗi: **Business Requirement (BR) → Functional Requiremen
 1. Các use case **cốt lõi** (đặt xe, matching, thanh toán, cập nhật trạng thái chuyến, đánh giá) đã có traceability đầy đủ từ BR → FR → UC → QT → AC — đây là phần nên ưu tiên code và test trước.
 2. Các use case CRUD đơn giản (hồ sơ, lịch sử, quản trị) có độ ưu tiên thấp hơn, có thể viết AC bổ sung sau khi phần lõi ổn định.
 3. **5 điểm nghiệp vụ chưa chốt** (đã lặp lại xuyên suốt từ Bước 1 đến giờ: công thức cước, tiêu chí ưu tiên tài xế, thời gian phản hồi, số lần thử matching, chính sách hủy chuyến) là **rủi ro lớn nhất của dự án** — nên đưa thành mục riêng trong báo cáo, đề xuất buổi làm việc với khách hàng để chốt trước khi bắt đầu sprint đầu tiên.
-
