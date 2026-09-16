@@ -1,1 +1,1746 @@
+openapi: 3.0.0
+info:
+  title: CAB System API
+  description: 'API tổng hợp cho toàn bộ nền tảng đặt xe CAB System, gộp từ 11 file OpenAPI theo từng
+    resource/service: Auth, Customer Profile, Driver Profile, Trip, Trip Status, Trip Rating, Matching
+    (internal), Driver Operations, Payment, Notification, Admin & Reporting.
 
+
+    Quy ước prefix path:
+
+    - Không tiền tố: API công khai (public), gọi qua API Gateway, yêu cầu bearerAuth.
+
+    - /internal/...: API nội bộ giữa các service (service-to-service), KHÔNG lộ ra ngoài Gateway, xác
+    thực bằng apiKeyAuth hoặc webhookSignature tùy trường hợp.
+
+    - /admin/...: API dành cho nhân viên vận hành (role operator/admin), yêu cầu bearerAuth kèm kiểm tra
+    vai trò (QT-21).
+
+
+    FR-06 (xác thực & phân quyền), FR-26 (không lưu thông tin thẻ), FR-31 (kiến trúc mở rộng kênh thông
+    báo) không xuất hiện thành endpoint riêng vì đây là ràng buộc/yêu cầu kiến trúc, không phải hành vi
+    gọi được - được ghi chú trong mô tả của các endpoint liên quan.'
+  version: 1.0.0
+servers:
+- url: https://api.cabsystem.local/api/v1
+  description: Production (giả lập) - API Gateway
+- url: http://localhost:8080/api/v1
+  description: Local dev - API Gateway
+- url: http://internal-network:9000
+  description: Mạng nội bộ - dùng cho các path /internal/...
+tags:
+- name: Auth
+- name: Customers
+- name: Drivers
+- name: Trips
+- name: TripStatus
+- name: TripRating
+- name: Matching
+- name: DriverOperations
+- name: Payments
+- name: Notifications
+- name: AdminCustomers
+- name: AdminDrivers
+- name: AdminTrips
+- name: AdminUsers
+- name: AdminReports
+security:
+- bearerAuth: []
+paths:
+  /auth/register:
+    post:
+      summary: Đăng ký tài khoản khách hàng
+      description: FR-01 - Cho phép khách hàng đăng ký tài khoản mới bằng số điện thoại/email.
+      operationId: registerCustomer
+      tags:
+      - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - phone
+              - password
+              - full_name
+              properties:
+                phone:
+                  type: string
+                  example: 0901234567
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                full_name:
+                  type: string
+      responses:
+        '201':
+          description: Đăng ký thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Số điện thoại/email đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/login:
+    post:
+      summary: Đăng nhập (dùng chung cho khách hàng và tài xế)
+      description: FR-02 - Xác thực người dùng bằng số điện thoại và mật khẩu, trả về access token.
+      operationId: login
+      tags:
+      - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - phone
+              - password
+              properties:
+                phone:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Sai số điện thoại hoặc mật khẩu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /customers/me:
+    get:
+      summary: Xem hồ sơ khách hàng hiện tại
+      description: FR-03 - Lấy thông tin hồ sơ cá nhân của khách hàng đang đăng nhập.
+      operationId: getMyCustomerProfile
+      tags:
+      - Customers
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Thông tin hồ sơ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          description: Chưa xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Cập nhật hồ sơ khách hàng
+      description: FR-03 - Cho phép khách hàng cập nhật họ tên, ảnh đại diện, email.
+      operationId: updateMyCustomerProfile
+      tags:
+      - Customers
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                avatar_url:
+                  type: string
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /drivers/register:
+    post:
+      summary: Đăng ký / tạo tài khoản tài xế
+      description: FR-04 - Tài xế tự đăng ký hoặc nhân viên vận hành tạo tài khoản cho tài xế.
+      operationId: registerDriver
+      tags:
+      - Drivers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - phone
+              - password
+              - full_name
+              properties:
+                phone:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                full_name:
+                  type: string
+      responses:
+        '201':
+          description: Tạo tài khoản tài xế thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Số điện thoại đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /drivers/me:
+    get:
+      summary: Xem hồ sơ và thông tin phương tiện của tài xế hiện tại
+      description: FR-05 - Lấy hồ sơ cá nhân và thông tin xe của tài xế đang đăng nhập.
+      operationId: getMyDriverProfile
+      tags:
+      - Drivers
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Thông tin hồ sơ tài xế
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+    put:
+      summary: Cập nhật hồ sơ và phương tiện tài xế
+      description: 'FR-05 - Cập nhật thông tin cá nhân và phương tiện (biển số, loại xe, giấy tờ).
+
+        QT-07: Tài xế phải cập nhật đầy đủ thông tin phương tiện trước khi được bật trạng thái sẵn sàng
+
+        (xem driver-ops-service.yaml, endpoint PATCH /drivers/me/availability).
+
+        '
+      operationId: updateMyDriverProfile
+      tags:
+      - Drivers
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverUpdateRequest'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+        '400':
+          description: Thiếu thông tin bắt buộc (giấy tờ, biển số...)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /trips:
+    post:
+      summary: Đặt xe (tạo yêu cầu chuyến đi mới)
+      description: 'Gộp FR-07 (nhập điểm đón/đến), FR-08 (chọn loại xe), FR-09 (tạo yêu cầu chuyến) thành
+        1 API duy nhất.
+
+        Sau khi tạo, hệ thống gọi nội bộ sang Matching Service để tìm tài xế (xem matching-service.yaml).
+
+        '
+      operationId: createTrip
+      tags:
+      - Trips
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripCreateRequest'
+      responses:
+        '201':
+          description: Tạo yêu cầu chuyến thành công, trạng thái "searching_driver"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '400':
+          description: Điểm đón/đến không hợp lệ hoặc ngoài vùng phục vụ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Khách hàng đang có chuyến chưa hoàn thành
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Xem lịch sử chuyến đi
+      description: FR-12 - Trả về danh sách chuyến đã thực hiện của khách hàng hiện tại.
+      operationId: listMyTrips
+      tags:
+      - Trips
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        description: Lọc theo trạng thái chuyến
+        schema:
+          type: string
+          enum:
+          - completed
+          - cancelled
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+      responses:
+        '200':
+          description: Danh sách chuyến đi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Trip'
+  /trips/{tripId}:
+    get:
+      summary: Xem chi tiết / theo dõi trạng thái chuyến đi theo thời gian thực
+      description: FR-10 - Trả về trạng thái hiện tại của chuyến, vị trí tài xế (nếu có).
+      operationId: getTripById
+      tags:
+      - Trips
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: tripId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Chi tiết chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '404':
+          description: Không tìm thấy chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /trips/{tripId}/cancel:
+    post:
+      summary: Hủy chuyến đi
+      description: 'FR-11 - Khách hàng hủy chuyến. Chỉ cho phép khi Trip.status thuộc
+
+        [searching_driver, driver_assigned] (QT-14). Chính sách phí hủy hiện chưa chốt với khách hàng.
+
+        '
+      operationId: cancelTrip
+      tags:
+      - TripStatus
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: tripId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Hủy chuyến thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripStatusView'
+        '409':
+          description: Chuyến đã ở trạng thái không cho phép hủy (đang di chuyển trở đi)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /trips/{tripId}/status:
+    patch:
+      summary: (Tài xế) Cập nhật trạng thái chuyến đi
+      description: 'FR-21 - Tài xế cập nhật các mốc trạng thái: arrived_pickup, picked_up, completed.
+
+        QT-09: chỉ chấp nhận chuyển trạng thái đúng thứ tự.
+
+        '
+      operationId: updateTripStatus
+      tags:
+      - TripStatus
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: tripId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - arrived_pickup
+                  - picked_up
+                  - in_progress
+                  - completed
+      responses:
+        '200':
+          description: Cập nhật trạng thái thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripStatusView'
+        '409':
+          description: Chuyển trạng thái không hợp lệ theo thứ tự quy định (QT-09)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /trips/{tripId}/rating:
+    post:
+      summary: Đánh giá tài xế sau chuyến đi
+      description: 'FR-13 - Khách hàng đánh giá tài xế. QT-17: chỉ khi Trip.status = completed.
+
+        QT-18: mỗi chuyến chỉ được đánh giá 1 lần.
+
+        '
+      operationId: rateTrip
+      tags:
+      - TripRating
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: tripId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - stars
+              properties:
+                stars:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        '201':
+          description: Đánh giá thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+        '409':
+          description: Chuyến chưa hoàn thành hoặc đã được đánh giá trước đó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /internal/matching/requests:
+    post:
+      summary: Yêu cầu tìm tài xế cho một chuyến đi
+      description: 'FR-14, FR-15 - Được Trip/Booking Service gọi ngay sau khi tạo Trip.
+
+        Matching Service tìm tài xế gần nhất đang "available" và gửi đề xuất (QT-01, QT-02, QT-03).
+
+        '
+      operationId: createMatchingRequest
+      tags:
+      - Matching
+      security:
+      - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - trip_id
+              - pickup
+              properties:
+                trip_id:
+                  type: string
+                pickup:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+                vehicle_type:
+                  type: string
+      responses:
+        '202':
+          description: Đã nhận yêu cầu, đang xử lý matching bất đồng bộ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingRequest'
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /internal/matching/requests/{requestId}:
+    get:
+      summary: Truy vấn trạng thái một yêu cầu matching
+      description: FR-17 - Kiểm tra tiến trình matching, hoặc xác nhận "không tìm được tài xế".
+      operationId: getMatchingRequest
+      tags:
+      - Matching
+      security:
+      - apiKeyAuth: []
+      parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Trạng thái yêu cầu matching
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingRequest'
+        '404':
+          description: Không tìm thấy yêu cầu matching
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /internal/matching/requests/{requestId}/driver-response:
+    post:
+      summary: Ghi nhận phản hồi của tài xế cho một đề xuất chuyến
+      description: 'FR-16 - Được Driver Operations Service gọi sau khi tài xế chấp nhận/từ chối
+
+        (xem POST /drivers/me/trip-offers/{offerId}/respond trong driver-service.yaml).
+
+        Nếu "rejected"/"timeout", Matching Service tự động chuyển sang tài xế tiếp theo (QT-04).
+
+        Nếu hết danh sách, chuyển request sang "no_driver_found" (QT-05) và báo lại Trip Service.
+
+        '
+      operationId: submitDriverResponse
+      tags:
+      - Matching
+      security:
+      - apiKeyAuth: []
+      parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - driver_id
+              - response
+              properties:
+                driver_id:
+                  type: string
+                response:
+                  type: string
+                  enum:
+                  - accepted
+                  - rejected
+                  - timeout
+      responses:
+        '200':
+          description: Đã ghi nhận phản hồi và cập nhật trạng thái matching
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingRequest'
+        '409':
+          description: Yêu cầu matching đã kết thúc (đã có tài xế hoặc đã hết hạn)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /drivers/me/availability:
+    patch:
+      summary: Bật/tắt trạng thái sẵn sàng nhận chuyến
+      description: 'FR-18 - Tài xế chuyển trạng thái available/offline.
+
+        QT-07: chỉ cho phép bật "available" nếu hồ sơ & phương tiện đã đầy đủ và được duyệt.
+
+        '
+      operationId: updateDriverAvailability
+      tags:
+      - DriverOperations
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - available
+                  - offline
+      responses:
+        '200':
+          description: Cập nhật trạng thái thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  driver_id:
+                    type: string
+                  status:
+                    type: string
+        '400':
+          description: Hồ sơ/phương tiện chưa đầy đủ hoặc chưa được duyệt (QT-07)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /drivers/me/trip-offers/{offerId}:
+    get:
+      summary: Xem thông tin đề xuất chuyến đi
+      description: FR-19 - Tài xế xem chi tiết đề xuất chuyến trước khi quyết định chấp nhận/từ chối.
+      operationId: getTripOffer
+      tags:
+      - DriverOperations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: offerId
+        in: path
+        required: true
+        description: ID đề xuất chuyến (tương ứng 1 matching request)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Chi tiết đề xuất chuyến
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripOffer'
+        '404':
+          description: Đề xuất không tồn tại hoặc đã hết hạn
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /drivers/me/trip-offers/{offerId}/respond:
+    post:
+      summary: Chấp nhận hoặc từ chối đề xuất chuyến
+      description: 'FR-20 - Tài xế phản hồi trong thời gian giới hạn (QT-03).
+
+        Sau khi ghi nhận, service này gọi nội bộ sang Matching Service
+
+        (POST /matching/requests/{id}/driver-response) để cập nhật luồng fallback (QT-04).
+
+        '
+      operationId: respondTripOffer
+      tags:
+      - DriverOperations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: offerId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - decision
+              properties:
+                decision:
+                  type: string
+                  enum:
+                  - accept
+                  - reject
+      responses:
+        '200':
+          description: Đã ghi nhận phản hồi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripOffer'
+        '409':
+          description: Đề xuất đã hết hạn hoặc đã được xử lý trước đó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /drivers/me/location:
+    post:
+      summary: Gửi vị trí hiện tại của tài xế
+      description: 'FR-22 - Tài xế gửi tọa độ định kỳ (QT-08). Nếu có trip_id, vị trí được ghi vào
+
+        Driver Location Log gắn với chuyến đang thực hiện (phục vụ theo dõi real-time ở trip-service).
+
+        '
+      operationId: updateDriverLocation
+      tags:
+      - DriverOperations
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - lat
+              - lng
+              properties:
+                lat:
+                  type: number
+                  format: float
+                lng:
+                  type: number
+                  format: float
+                trip_id:
+                  type: string
+                  nullable: true
+      responses:
+        '204':
+          description: Ghi nhận vị trí thành công (không có nội dung trả về)
+        '400':
+          description: Tọa độ không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /payments:
+    post:
+      summary: Tạo yêu cầu thanh toán cho một chuyến đã hoàn thành
+      description: 'Gộp FR-23 (tính cước) và FR-24 (chọn phương thức thanh toán).
+
+        Được gọi ngay sau khi Trip Service xác nhận chuyến ở trạng thái "completed".
+
+        '
+      operationId: createPayment
+      tags:
+      - Payments
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - trip_id
+              - method
+              properties:
+                trip_id:
+                  type: string
+                method:
+                  type: string
+                  enum:
+                  - cash
+                  - e_wallet
+      responses:
+        '201':
+          description: 'Tạo yêu cầu thanh toán thành công. Nếu method=cash, status trả về "success" ngay
+
+            sau khi tài xế xác nhận (xử lý ở luồng riêng). Nếu method=e_wallet, service tự động
+
+            gọi cổng thanh toán bên thứ ba (FR-25) và trả về status "processing" hoặc kết quả tức thời.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Trip chưa ở trạng thái "completed" hoặc đã có Payment thành công trước đó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /payments/{paymentId}:
+    get:
+      summary: Xem trạng thái một giao dịch thanh toán
+      description: FR-28 - Ghi nhận/tra cứu trạng thái thanh toán (pending/success/failed) cho một chuyến.
+      operationId: getPaymentById
+      tags:
+      - Payments
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Thông tin giao dịch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '404':
+          description: Không tìm thấy giao dịch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /payments/{paymentId}/retry:
+    post:
+      summary: Thử lại thanh toán sau khi thất bại
+      description: 'FR-27 - QT-12: khi giao dịch điện tử thất bại, cho phép thử lại (giữ nguyên method)
+
+        hoặc chuyển sang phương thức khác qua tham số method trong body.
+
+        '
+      operationId: retryPayment
+      tags:
+      - Payments
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                method:
+                  type: string
+                  enum:
+                  - cash
+                  - e_wallet
+                  description: Bỏ trống nếu muốn giữ nguyên phương thức cũ
+      responses:
+        '200':
+          description: Đã tạo lại yêu cầu xử lý thanh toán
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '409':
+          description: Giao dịch trước đó chưa ở trạng thái "failed", không thể thử lại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /internal/payments/webhook:
+    post:
+      summary: Webhook nhận kết quả giao dịch từ cổng thanh toán bên thứ ba
+      description: 'FR-25 - Cổng thanh toán bên thứ ba gọi ngược về endpoint này khi có kết quả giao dịch
+
+        (thành công/thất bại). Đây là API nội bộ, không dùng bearerAuth thông thường mà xác thực
+
+        bằng chữ ký số (signature) do cổng thanh toán cung cấp.
+
+        '
+      operationId: paymentGatewayWebhook
+      tags:
+      - Payments
+      security:
+      - webhookSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - gateway_transaction_id
+              - status
+              properties:
+                gateway_transaction_id:
+                  type: string
+                payment_id:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                  - success
+                  - failed
+      responses:
+        '200':
+          description: Đã xử lý webhook thành công
+        '401':
+          description: Chữ ký không hợp lệ (không xác thực được nguồn gọi)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /internal/notifications:
+    post:
+      summary: Gửi thông báo (API nội bộ, service khác gọi vào)
+      description: 'FR-29, FR-30 - Được Trip Service, Matching Service, Payment Service... gọi
+
+        khi có sự kiện cần thông báo cho khách hàng hoặc tài xế.
+
+        '
+      operationId: sendNotification
+      tags:
+      - Notifications
+      security:
+      - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - recipient_type
+              - recipient_id
+              - channel
+              - content
+              properties:
+                recipient_type:
+                  type: string
+                  enum:
+                  - customer
+                  - driver
+                recipient_id:
+                  type: string
+                trip_id:
+                  type: string
+                  nullable: true
+                channel:
+                  type: string
+                  description: Mở để thêm kênh mới trong tương lai (FR-31), ví dụ push, sms, email
+                  example: push
+                content:
+                  type: string
+      responses:
+        '202':
+          description: Đã nhận yêu cầu gửi thông báo (xử lý bất đồng bộ)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '400':
+          description: Thiếu thông tin bắt buộc
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /notifications:
+    get:
+      summary: Xem lịch sử thông báo của bản thân (bonus API, không thuộc FR nào)
+      description: 'Không map trực tiếp một FR nào trong SRS, nhưng cần thiết cho UX: cho phép
+
+        khách hàng/tài xế xem lại thông báo đã nhận trong app.
+
+        '
+      operationId: listMyNotifications
+      tags:
+      - Notifications
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 1
+      responses:
+        '200':
+          description: Danh sách thông báo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+  /admin/customers:
+    get:
+      summary: Tìm kiếm / liệt kê khách hàng
+      description: FR-32 - Nhân viên vận hành tra cứu danh sách khách hàng.
+      operationId: listCustomersAdmin
+      tags:
+      - AdminCustomers
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: search
+        in: query
+        required: false
+        description: Tìm theo tên hoặc số điện thoại
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Danh sách khách hàng
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerAdminView'
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /admin/customers/{customerId}:
+    put:
+      summary: Chỉnh sửa thông tin khách hàng
+      description: FR-32
+      operationId: updateCustomerAdmin
+      tags:
+      - AdminCustomers
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerAdminView'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerAdminView'
+  /admin/drivers:
+    get:
+      summary: Tìm kiếm / liệt kê tài xế và phương tiện
+      description: FR-33
+      operationId: listDriversAdmin
+      tags:
+      - AdminDrivers
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: verified_status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - pending
+          - verified
+          - rejected
+      responses:
+        '200':
+          description: Danh sách tài xế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DriverAdminView'
+  /admin/drivers/{driverId}/verify:
+    put:
+      summary: Duyệt hồ sơ và phương tiện tài xế
+      description: FR-33 - Xác nhận giấy tờ, cho phép tài xế được bật trạng thái sẵn sàng (QT-07).
+      operationId: verifyDriver
+      tags:
+      - AdminDrivers
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: driverId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - verified_status
+              properties:
+                verified_status:
+                  type: string
+                  enum:
+                  - verified
+                  - rejected
+                note:
+                  type: string
+      responses:
+        '200':
+          description: Cập nhật trạng thái duyệt thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverAdminView'
+  /admin/drivers/{driverId}/lock:
+    put:
+      summary: Khóa / mở khóa tài khoản tài xế
+      description: FR-33. Thao tác này bắt buộc được ghi audit log (QT-22, FR-37).
+      operationId: lockDriver
+      tags:
+      - AdminDrivers
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: driverId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - locked
+              properties:
+                locked:
+                  type: boolean
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Cập nhật trạng thái khóa thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverAdminView'
+  /admin/trips/active:
+    get:
+      summary: Giám sát các chuyến đi đang diễn ra
+      description: FR-34 - Xem danh sách chuyến chưa hoàn thành để can thiệp khi có sự cố.
+      operationId: listActiveTrips
+      tags:
+      - AdminTrips
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Danh sách chuyến đang diễn ra
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    trip_id:
+                      type: string
+                    status:
+                      type: string
+                    customer_id:
+                      type: string
+                    driver_id:
+                      type: string
+  /admin/users/{userId}/role:
+    put:
+      summary: Phân quyền cho tài khoản nhân viên vận hành
+      description: FR-35 - Chỉ admin cấp cao mới được gọi API này (QT-21).
+      operationId: updateUserRole
+      tags:
+      - AdminUsers
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - role
+              properties:
+                role:
+                  type: string
+                  enum:
+                  - support_staff
+                  - operator
+                  - super_admin
+      responses:
+        '200':
+          description: Phân quyền thành công
+        '403':
+          description: Tài khoản hiện tại không đủ quyền phân quyền cho người khác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /admin/reports:
+    get:
+      summary: Xem báo cáo tổng hợp vận hành
+      description: 'FR-36 - Tổng số chuyến, doanh thu, tỷ lệ hoàn thành/hủy, hiệu suất tài xế
+
+        theo khoảng thời gian.
+
+        '
+      operationId: getReports
+      tags:
+      - AdminReports
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Dữ liệu báo cáo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_trips:
+                    type: integer
+                  total_revenue:
+                    type: number
+                    format: float
+                  completion_rate:
+                    type: number
+                    format: float
+                  cancellation_rate:
+                    type: number
+                    format: float
+                  top_drivers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        driver_id:
+                          type: string
+                        trips_completed:
+                          type: integer
+                        rating_avg:
+                          type: number
+                          format: float
+  /admin/audit-logs:
+    get:
+      summary: Xem nhật ký thao tác quản trị (audit log)
+      description: FR-37 - Truy vết ai thực hiện thao tác gì, khi nào (QT-22).
+      operationId: listAuditLogs
+      tags:
+      - AdminReports
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: admin_id
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Danh sách audit log
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+components:
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 3600
+        user_id:
+          type: string
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+        account_id:
+          type: string
+        full_name:
+          type: string
+        avatar_url:
+          type: string
+        rating_avg:
+          type: number
+          format: float
+    Driver:
+      type: object
+      properties:
+        id:
+          type: string
+        account_id:
+          type: string
+        full_name:
+          type: string
+        avatar_url:
+          type: string
+        status:
+          type: string
+          enum:
+          - offline
+          - available
+          - busy
+        rating_avg:
+          type: number
+          format: float
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+    DriverUpdateRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+        avatar_url:
+          type: string
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+    Vehicle:
+      type: object
+      properties:
+        plate_number:
+          type: string
+        vehicle_type:
+          type: string
+          enum:
+          - bike
+          - car_4
+          - car_7
+        brand:
+          type: string
+        model:
+          type: string
+        document_url:
+          type: string
+        verified_status:
+          type: string
+          enum:
+          - pending
+          - verified
+          - rejected
+    TripCreateRequest:
+      type: object
+      required:
+      - pickup
+      - dropoff
+      - vehicle_type
+      properties:
+        pickup:
+          $ref: '#/components/schemas/GeoPoint'
+        dropoff:
+          $ref: '#/components/schemas/GeoPoint'
+        vehicle_type:
+          type: string
+          enum:
+          - bike
+          - car_4
+          - car_7
+    GeoPoint:
+      type: object
+      required:
+      - lat
+      - lng
+      - address
+      properties:
+        lat:
+          type: number
+          format: float
+        lng:
+          type: number
+          format: float
+        address:
+          type: string
+    Trip:
+      type: object
+      properties:
+        id:
+          type: string
+        customer_id:
+          type: string
+        driver_id:
+          type: string
+          nullable: true
+        pickup:
+          $ref: '#/components/schemas/GeoPoint'
+        dropoff:
+          $ref: '#/components/schemas/GeoPoint'
+        vehicle_type:
+          type: string
+        status:
+          type: string
+          enum:
+          - searching_driver
+          - no_driver_found
+          - driver_assigned
+          - arrived_pickup
+          - picked_up
+          - in_progress
+          - completed
+          - cancelled
+        distance_km:
+          type: number
+          format: float
+        duration_min:
+          type: integer
+        total_fare:
+          type: number
+          format: float
+        requested_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    TripStatusView:
+      type: object
+      properties:
+        trip_id:
+          type: string
+        status:
+          type: string
+          enum:
+          - searching_driver
+          - no_driver_found
+          - driver_assigned
+          - arrived_pickup
+          - picked_up
+          - in_progress
+          - completed
+          - cancelled
+        cancelled_reason:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+    Rating:
+      type: object
+      properties:
+        id:
+          type: string
+        trip_id:
+          type: string
+        stars:
+          type: integer
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    MatchingRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        trip_id:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending
+          - offering
+          - matched
+          - no_driver_found
+        current_offer_driver_id:
+          type: string
+          nullable: true
+        attempts_count:
+          type: integer
+        matched_driver_id:
+          type: string
+          nullable: true
+    TripOffer:
+      type: object
+      properties:
+        id:
+          type: string
+        trip_id:
+          type: string
+        pickup_address:
+          type: string
+        dropoff_address:
+          type: string
+        estimated_distance_km:
+          type: number
+          format: float
+        expires_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+          - pending
+          - accepted
+          - rejected
+          - expired
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        trip_id:
+          type: string
+        method:
+          type: string
+          enum:
+          - cash
+          - e_wallet
+        status:
+          type: string
+          enum:
+          - pending
+          - processing
+          - success
+          - failed
+        amount:
+          type: number
+          format: float
+        gateway_transaction_id:
+          type: string
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        recipient_type:
+          type: string
+          enum:
+          - customer
+          - driver
+        recipient_id:
+          type: string
+        trip_id:
+          type: string
+          nullable: true
+        channel:
+          type: string
+        content:
+          type: string
+        status:
+          type: string
+          enum:
+          - queued
+          - sent
+          - failed
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+    CustomerAdminView:
+      type: object
+      properties:
+        id:
+          type: string
+        full_name:
+          type: string
+        phone:
+          type: string
+        rating_avg:
+          type: number
+          format: float
+        status:
+          type: string
+          enum:
+          - active
+          - suspended
+    DriverAdminView:
+      type: object
+      properties:
+        id:
+          type: string
+        full_name:
+          type: string
+        phone:
+          type: string
+        vehicle_plate:
+          type: string
+        verified_status:
+          type: string
+          enum:
+          - pending
+          - verified
+          - rejected
+        locked:
+          type: boolean
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+        admin_id:
+          type: string
+        action:
+          type: string
+        target_entity:
+          type: string
+        target_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Internal-Api-Key
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-Gateway-Signature
