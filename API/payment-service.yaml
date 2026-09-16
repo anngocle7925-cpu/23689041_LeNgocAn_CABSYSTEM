@@ -1,0 +1,208 @@
+openapi: 3.0.0
+info:
+  title: Payment Service API
+  description: |
+    Tính cước và xử lý thanh toán cho chuyến đi đã hoàn thành.
+    Map FR: FR-23, FR-24, FR-25, FR-27, FR-28.
+    FR-26 (không lưu thông tin nhạy cảm của thẻ/tài khoản) là một ràng buộc thiết kế,
+    không phải 1 endpoint - áp dụng cho toàn bộ service này: KHÔNG có API nào nhận/lưu số thẻ.
+  version: 1.0.0
+
+servers:
+  - url: https://api.cabsystem.local/api/v1
+    description: Production (giả lập)
+  - url: http://localhost:8085/api/v1
+    description: Local dev - Payment Service
+
+tags:
+  - name: Payments
+
+paths:
+  /payments:
+    post:
+      summary: Tạo yêu cầu thanh toán cho một chuyến đã hoàn thành
+      description: |
+        Gộp FR-23 (tính cước) và FR-24 (chọn phương thức thanh toán).
+        Được gọi ngay sau khi Trip Service xác nhận chuyến ở trạng thái "completed".
+      operationId: createPayment
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trip_id, method]
+              properties:
+                trip_id:
+                  type: string
+                method:
+                  type: string
+                  enum: [cash, e_wallet]
+      responses:
+        '201':
+          description: |
+            Tạo yêu cầu thanh toán thành công. Nếu method=cash, status trả về "success" ngay
+            sau khi tài xế xác nhận (xử lý ở luồng riêng). Nếu method=e_wallet, service tự động
+            gọi cổng thanh toán bên thứ ba (FR-25) và trả về status "processing" hoặc kết quả tức thời.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Trip chưa ở trạng thái "completed" hoặc đã có Payment thành công trước đó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /payments/{paymentId}:
+    get:
+      summary: Xem trạng thái một giao dịch thanh toán
+      description: FR-28 - Ghi nhận/tra cứu trạng thái thanh toán (pending/success/failed) cho một chuyến.
+      operationId: getPaymentById
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thông tin giao dịch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '404':
+          description: Không tìm thấy giao dịch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /payments/{paymentId}/retry:
+    post:
+      summary: Thử lại thanh toán sau khi thất bại
+      description: |
+        FR-27 - QT-12: khi giao dịch điện tử thất bại, cho phép thử lại (giữ nguyên method)
+        hoặc chuyển sang phương thức khác qua tham số method trong body.
+      operationId: retryPayment
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                method:
+                  type: string
+                  enum: [cash, e_wallet]
+                  description: Bỏ trống nếu muốn giữ nguyên phương thức cũ
+      responses:
+        '200':
+          description: Đã tạo lại yêu cầu xử lý thanh toán
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '409':
+          description: Giao dịch trước đó chưa ở trạng thái "failed", không thể thử lại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /internal/v1/payments/webhook:
+    post:
+      summary: Webhook nhận kết quả giao dịch từ cổng thanh toán bên thứ ba
+      description: |
+        FR-25 - Cổng thanh toán bên thứ ba gọi ngược về endpoint này khi có kết quả giao dịch
+        (thành công/thất bại). Đây là API nội bộ, không dùng bearerAuth thông thường mà xác thực
+        bằng chữ ký số (signature) do cổng thanh toán cung cấp.
+      operationId: paymentGatewayWebhook
+      tags: [Payments]
+      security:
+        - webhookSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [gateway_transaction_id, status]
+              properties:
+                gateway_transaction_id:
+                  type: string
+                payment_id:
+                  type: string
+                status:
+                  type: string
+                  enum: [success, failed]
+      responses:
+        '200':
+          description: Đã xử lý webhook thành công
+        '401':
+          description: Chữ ký không hợp lệ (không xác thực được nguồn gọi)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        trip_id:
+          type: string
+        method:
+          type: string
+          enum: [cash, e_wallet]
+        status:
+          type: string
+          enum: [pending, processing, success, failed]
+        amount:
+          type: number
+          format: float
+        gateway_transaction_id:
+          type: string
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-Gateway-Signature

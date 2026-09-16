@@ -1,0 +1,137 @@
+openapi: 3.0.0
+info:
+  title: Trip Status Service API
+  description: |
+    Các hành động làm thay đổi trạng thái chuyến đi: hủy chuyến (khách hàng),
+    cập nhật tiến trình chuyến (tài xế).
+    Map FR: FR-11, FR-21.
+  version: 1.0.0
+
+servers:
+  - url: https://api.cabsystem.local/api/v1
+    description: Production (giả lập)
+  - url: http://localhost:8082/api/v1
+    description: Local dev - dùng chung hạ tầng với Trip Service
+
+tags:
+  - name: TripStatus
+
+paths:
+  /trips/{tripId}/cancel:
+    post:
+      summary: Hủy chuyến đi
+      description: |
+        FR-11 - Khách hàng hủy chuyến. Chỉ cho phép khi Trip.status thuộc
+        [searching_driver, driver_assigned] (QT-14). Chính sách phí hủy hiện chưa chốt với khách hàng.
+      operationId: cancelTrip
+      tags: [TripStatus]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Hủy chuyến thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripStatusView'
+        '409':
+          description: Chuyến đã ở trạng thái không cho phép hủy (đang di chuyển trở đi)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trips/{tripId}/status:
+    patch:
+      summary: (Tài xế) Cập nhật trạng thái chuyến đi
+      description: |
+        FR-21 - Tài xế cập nhật các mốc trạng thái: arrived_pickup, picked_up, completed.
+        QT-09: chỉ chấp nhận chuyển trạng thái đúng thứ tự.
+      operationId: updateTripStatus
+      tags: [TripStatus]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [arrived_pickup, picked_up, in_progress, completed]
+      responses:
+        '200':
+          description: Cập nhật trạng thái thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripStatusView'
+        '409':
+          description: Chuyển trạng thái không hợp lệ theo thứ tự quy định (QT-09)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    TripStatusView:
+      type: object
+      properties:
+        trip_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - searching_driver
+            - no_driver_found
+            - driver_assigned
+            - arrived_pickup
+            - picked_up
+            - in_progress
+            - completed
+            - cancelled
+        cancelled_reason:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

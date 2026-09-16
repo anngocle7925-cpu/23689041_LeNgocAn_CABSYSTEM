@@ -1,0 +1,104 @@
+openapi: 3.0.0
+info:
+  title: Customer Profile Service API
+  description: |
+    Quản lý hồ sơ cá nhân của khách hàng.
+    Map FR: FR-03.
+  version: 1.0.0
+
+servers:
+  - url: https://api.cabsystem.local/api/v1
+    description: Production (giả lập)
+  - url: http://localhost:8081/api/v1
+    description: Local dev - dùng chung hạ tầng với Auth Service
+
+tags:
+  - name: Customers
+
+paths:
+  /customers/me:
+    get:
+      summary: Xem hồ sơ khách hàng hiện tại
+      description: FR-03 - Lấy thông tin hồ sơ cá nhân của khách hàng đang đăng nhập.
+      operationId: getMyCustomerProfile
+      tags: [Customers]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Thông tin hồ sơ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          description: Chưa xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Cập nhật hồ sơ khách hàng
+      description: FR-03 - Cho phép khách hàng cập nhật họ tên, ảnh đại diện, email.
+      operationId: updateMyCustomerProfile
+      tags: [Customers]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                avatar_url:
+                  type: string
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+        account_id:
+          type: string
+        full_name:
+          type: string
+        avatar_url:
+          type: string
+        rating_avg:
+          type: number
+          format: float
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

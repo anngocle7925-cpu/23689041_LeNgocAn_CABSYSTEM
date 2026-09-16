@@ -1,0 +1,203 @@
+openapi: 3.0.0
+info:
+  title: Driver Operations Service API
+  description: |
+    Quản lý trạng thái vận hành của tài xế: bật/tắt sẵn sàng, nhận/từ chối đề xuất chuyến, gửi vị trí.
+    Map FR: FR-18, FR-19, FR-20, FR-22.
+    (FR-21 - cập nhật trạng thái chuyến đi - nằm ở trip-service.yaml vì chỉnh sửa tài nguyên Trip)
+  version: 1.0.0
+
+servers:
+  - url: https://api.cabsystem.local/api/v1
+    description: Production (giả lập)
+  - url: http://localhost:8084/api/v1
+    description: Local dev - Driver Operations Service
+
+tags:
+  - name: DriverOperations
+
+paths:
+  /drivers/me/availability:
+    patch:
+      summary: Bật/tắt trạng thái sẵn sàng nhận chuyến
+      description: |
+        FR-18 - Tài xế chuyển trạng thái available/offline.
+        QT-07: chỉ cho phép bật "available" nếu hồ sơ & phương tiện đã đầy đủ và được duyệt.
+      operationId: updateDriverAvailability
+      tags: [DriverOperations]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [available, offline]
+      responses:
+        '200':
+          description: Cập nhật trạng thái thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  driver_id:
+                    type: string
+                  status:
+                    type: string
+        '400':
+          description: Hồ sơ/phương tiện chưa đầy đủ hoặc chưa được duyệt (QT-07)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/me/trip-offers/{offerId}:
+    get:
+      summary: Xem thông tin đề xuất chuyến đi
+      description: FR-19 - Tài xế xem chi tiết đề xuất chuyến trước khi quyết định chấp nhận/từ chối.
+      operationId: getTripOffer
+      tags: [DriverOperations]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          description: ID đề xuất chuyến (tương ứng 1 matching request)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chi tiết đề xuất chuyến
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripOffer'
+        '404':
+          description: Đề xuất không tồn tại hoặc đã hết hạn
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/me/trip-offers/{offerId}/respond:
+    post:
+      summary: Chấp nhận hoặc từ chối đề xuất chuyến
+      description: |
+        FR-20 - Tài xế phản hồi trong thời gian giới hạn (QT-03).
+        Sau khi ghi nhận, service này gọi nội bộ sang Matching Service
+        (POST /matching/requests/{id}/driver-response) để cập nhật luồng fallback (QT-04).
+      operationId: respondTripOffer
+      tags: [DriverOperations]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision:
+                  type: string
+                  enum: [accept, reject]
+      responses:
+        '200':
+          description: Đã ghi nhận phản hồi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripOffer'
+        '409':
+          description: Đề xuất đã hết hạn hoặc đã được xử lý trước đó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/me/location:
+    post:
+      summary: Gửi vị trí hiện tại của tài xế
+      description: |
+        FR-22 - Tài xế gửi tọa độ định kỳ (QT-08). Nếu có trip_id, vị trí được ghi vào
+        Driver Location Log gắn với chuyến đang thực hiện (phục vụ theo dõi real-time ở trip-service).
+      operationId: updateDriverLocation
+      tags: [DriverOperations]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lat, lng]
+              properties:
+                lat:
+                  type: number
+                  format: float
+                lng:
+                  type: number
+                  format: float
+                trip_id:
+                  type: string
+                  nullable: true
+      responses:
+        '204':
+          description: Ghi nhận vị trí thành công (không có nội dung trả về)
+        '400':
+          description: Tọa độ không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    TripOffer:
+      type: object
+      properties:
+        id:
+          type: string
+        trip_id:
+          type: string
+        pickup_address:
+          type: string
+        dropoff_address:
+          type: string
+        estimated_distance_km:
+          type: number
+          format: float
+        expires_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pending, accepted, rejected, expired]
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,139 @@
+openapi: 3.0.0
+info:
+  title: Notification Service API
+  description: |
+    Gửi thông báo cho khách hàng/tài xế tại các mốc quan trọng của chuyến đi.
+    Map FR: FR-29, FR-30. Có kèm 1 API bonus (GET /notifications) không map FR cụ thể,
+    phục vụ trải nghiệm xem lại lịch sử thông báo.
+    FR-31 (kiến trúc mở rộng kênh gửi) không phải là 1 endpoint mà là yêu cầu thiết kế:
+    endpoint /internal/v1/notifications nhận "channel" dạng string mở, xử lý qua adapter
+    pattern bên trong service, cho phép thêm provider mới (SMS/email/push) mà không đổi API.
+  version: 1.0.0
+
+servers:
+  - url: https://api.cabsystem.local/api/v1
+    description: Production (giả lập)
+  - url: http://localhost:8086
+    description: Local dev - Notification Service
+
+tags:
+  - name: Notifications
+
+paths:
+  /internal/v1/notifications:
+    post:
+      summary: Gửi thông báo (API nội bộ, service khác gọi vào)
+      description: |
+        FR-29, FR-30 - Được Trip Service, Matching Service, Payment Service... gọi
+        khi có sự kiện cần thông báo cho khách hàng hoặc tài xế.
+      operationId: sendNotification
+      tags: [Notifications]
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipient_type, recipient_id, channel, content]
+              properties:
+                recipient_type:
+                  type: string
+                  enum: [customer, driver]
+                recipient_id:
+                  type: string
+                trip_id:
+                  type: string
+                  nullable: true
+                channel:
+                  type: string
+                  description: Mở để thêm kênh mới trong tương lai (FR-31), ví dụ push, sms, email
+                  example: push
+                content:
+                  type: string
+      responses:
+        '202':
+          description: Đã nhận yêu cầu gửi thông báo (xử lý bất đồng bộ)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '400':
+          description: Thiếu thông tin bắt buộc
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/notifications:
+    get:
+      summary: Xem lịch sử thông báo của bản thân (bonus API, không thuộc FR nào)
+      description: |
+        Không map trực tiếp một FR nào trong SRS, nhưng cần thiết cho UX: cho phép
+        khách hàng/tài xế xem lại thông báo đã nhận trong app.
+      operationId: listMyNotifications
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Danh sách thông báo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+
+components:
+  schemas:
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        recipient_type:
+          type: string
+          enum: [customer, driver]
+        recipient_id:
+          type: string
+        trip_id:
+          type: string
+          nullable: true
+        channel:
+          type: string
+        content:
+          type: string
+        status:
+          type: string
+          enum: [queued, sent, failed]
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Internal-Api-Key

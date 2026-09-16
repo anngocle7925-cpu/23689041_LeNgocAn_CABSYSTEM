@@ -1,0 +1,210 @@
+openapi: 3.0.0
+info:
+  title: Trip Service API
+  description: |
+    Tạo yêu cầu chuyến đi, xem chi tiết/theo dõi real-time, xem lịch sử.
+    Map FR: FR-07, FR-08, FR-09, FR-10, FR-12.
+    (Hủy chuyến & cập nhật trạng thái: xem trip-status-service.yaml.
+     Đánh giá tài xế: xem trip-rating-service.yaml.)
+  version: 1.0.0
+
+servers:
+  - url: https://api.cabsystem.local/api/v1
+    description: Production (giả lập)
+  - url: http://localhost:8082/api/v1
+    description: Local dev - Trip Service
+
+tags:
+  - name: Trips
+
+paths:
+  /trips:
+    post:
+      summary: Đặt xe (tạo yêu cầu chuyến đi mới)
+      description: |
+        Gộp FR-07 (nhập điểm đón/đến), FR-08 (chọn loại xe), FR-09 (tạo yêu cầu chuyến) thành 1 API duy nhất.
+        Sau khi tạo, hệ thống gọi nội bộ sang Matching Service để tìm tài xế (xem matching-service.yaml).
+      operationId: createTrip
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripCreateRequest'
+      responses:
+        '201':
+          description: Tạo yêu cầu chuyến thành công, trạng thái "searching_driver"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '400':
+          description: Điểm đón/đến không hợp lệ hoặc ngoài vùng phục vụ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Khách hàng đang có chuyến chưa hoàn thành
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: Xem lịch sử chuyến đi
+      description: FR-12 - Trả về danh sách chuyến đã thực hiện của khách hàng hiện tại.
+      operationId: listMyTrips
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Lọc theo trạng thái chuyến
+          schema:
+            type: string
+            enum: [completed, cancelled]
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Danh sách chuyến đi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Trip'
+
+  /trips/{tripId}:
+    get:
+      summary: Xem chi tiết / theo dõi trạng thái chuyến đi theo thời gian thực
+      description: FR-10 - Trả về trạng thái hiện tại của chuyến, vị trí tài xế (nếu có).
+      operationId: getTripById
+      tags: [Trips]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chi tiết chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '404':
+          description: Không tìm thấy chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    TripCreateRequest:
+      type: object
+      required: [pickup, dropoff, vehicle_type]
+      properties:
+        pickup:
+          $ref: '#/components/schemas/GeoPoint'
+        dropoff:
+          $ref: '#/components/schemas/GeoPoint'
+        vehicle_type:
+          type: string
+          enum: [bike, car_4, car_7]
+
+    GeoPoint:
+      type: object
+      required: [lat, lng, address]
+      properties:
+        lat:
+          type: number
+          format: float
+        lng:
+          type: number
+          format: float
+        address:
+          type: string
+
+    Trip:
+      type: object
+      properties:
+        id:
+          type: string
+        customer_id:
+          type: string
+        driver_id:
+          type: string
+          nullable: true
+        pickup:
+          $ref: '#/components/schemas/GeoPoint'
+        dropoff:
+          $ref: '#/components/schemas/GeoPoint'
+        vehicle_type:
+          type: string
+        status:
+          type: string
+          enum:
+            - searching_driver
+            - no_driver_found
+            - driver_assigned
+            - arrived_pickup
+            - picked_up
+            - in_progress
+            - completed
+            - cancelled
+        distance_km:
+          type: number
+          format: float
+        duration_min:
+          type: integer
+        total_fare:
+          type: number
+          format: float
+        requested_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

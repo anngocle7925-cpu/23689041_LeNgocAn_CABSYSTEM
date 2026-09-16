@@ -1,0 +1,167 @@
+openapi: 3.0.0
+info:
+  title: Matching Service API (Internal)
+  description: |
+    Tìm và phân công tài xế cho một chuyến đi. Đây là API NỘI BỘ (service-to-service),
+    KHÔNG expose qua API Gateway cho client (khách hàng/tài xế không gọi trực tiếp).
+    Map FR: FR-14, FR-15, FR-16, FR-17.
+  version: 1.0.0
+
+servers:
+  - url: http://matching-service.internal:8083/internal/v1
+    description: Internal service network
+
+tags:
+  - name: Matching
+
+paths:
+  /matching/requests:
+    post:
+      summary: Yêu cầu tìm tài xế cho một chuyến đi
+      description: |
+        FR-14, FR-15 - Được Trip/Booking Service gọi ngay sau khi tạo Trip.
+        Matching Service tìm tài xế gần nhất đang "available" và gửi đề xuất (QT-01, QT-02, QT-03).
+      operationId: createMatchingRequest
+      tags: [Matching]
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trip_id, pickup]
+              properties:
+                trip_id:
+                  type: string
+                pickup:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+                vehicle_type:
+                  type: string
+      responses:
+        '202':
+          description: Đã nhận yêu cầu, đang xử lý matching bất đồng bộ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingRequest'
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /matching/requests/{requestId}:
+    get:
+      summary: Truy vấn trạng thái một yêu cầu matching
+      description: FR-17 - Kiểm tra tiến trình matching, hoặc xác nhận "không tìm được tài xế".
+      operationId: getMatchingRequest
+      tags: [Matching]
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trạng thái yêu cầu matching
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingRequest'
+        '404':
+          description: Không tìm thấy yêu cầu matching
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /matching/requests/{requestId}/driver-response:
+    post:
+      summary: Ghi nhận phản hồi của tài xế cho một đề xuất chuyến
+      description: |
+        FR-16 - Được Driver Operations Service gọi sau khi tài xế chấp nhận/từ chối
+        (xem POST /drivers/me/trip-offers/{offerId}/respond trong driver-service.yaml).
+        Nếu "rejected"/"timeout", Matching Service tự động chuyển sang tài xế tiếp theo (QT-04).
+        Nếu hết danh sách, chuyển request sang "no_driver_found" (QT-05) và báo lại Trip Service.
+      operationId: submitDriverResponse
+      tags: [Matching]
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [driver_id, response]
+              properties:
+                driver_id:
+                  type: string
+                response:
+                  type: string
+                  enum: [accepted, rejected, timeout]
+      responses:
+        '200':
+          description: Đã ghi nhận phản hồi và cập nhật trạng thái matching
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchingRequest'
+        '409':
+          description: Yêu cầu matching đã kết thúc (đã có tài xế hoặc đã hết hạn)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    MatchingRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        trip_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, offering, matched, no_driver_found]
+        current_offer_driver_id:
+          type: string
+          nullable: true
+        attempts_count:
+          type: integer
+        matched_driver_id:
+          type: string
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Internal-Api-Key

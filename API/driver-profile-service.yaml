@@ -1,0 +1,175 @@
+openapi: 3.0.0
+info:
+  title: Driver Profile Service API
+  description: |
+    Đăng ký tài khoản tài xế và quản lý hồ sơ, thông tin phương tiện.
+    Map FR: FR-04, FR-05.
+  version: 1.0.0
+
+servers:
+  - url: https://api.cabsystem.local/api/v1
+    description: Production (giả lập)
+  - url: http://localhost:8081/api/v1
+    description: Local dev - dùng chung hạ tầng với Auth Service
+
+tags:
+  - name: Drivers
+
+paths:
+  /drivers/register:
+    post:
+      summary: Đăng ký / tạo tài khoản tài xế
+      description: FR-04 - Tài xế tự đăng ký hoặc nhân viên vận hành tạo tài khoản cho tài xế.
+      operationId: registerDriver
+      tags: [Drivers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, password, full_name]
+              properties:
+                phone:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                full_name:
+                  type: string
+      responses:
+        '201':
+          description: Tạo tài khoản tài xế thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Số điện thoại đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/me:
+    get:
+      summary: Xem hồ sơ và thông tin phương tiện của tài xế hiện tại
+      description: FR-05 - Lấy hồ sơ cá nhân và thông tin xe của tài xế đang đăng nhập.
+      operationId: getMyDriverProfile
+      tags: [Drivers]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Thông tin hồ sơ tài xế
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+    put:
+      summary: Cập nhật hồ sơ và phương tiện tài xế
+      description: |
+        FR-05 - Cập nhật thông tin cá nhân và phương tiện (biển số, loại xe, giấy tờ).
+        QT-07: Tài xế phải cập nhật đầy đủ thông tin phương tiện trước khi được bật trạng thái sẵn sàng
+        (xem driver-ops-service.yaml, endpoint PATCH /drivers/me/availability).
+      operationId: updateMyDriverProfile
+      tags: [Drivers]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverUpdateRequest'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+        '400':
+          description: Thiếu thông tin bắt buộc (giấy tờ, biển số...)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 3600
+        user_id:
+          type: string
+
+    Driver:
+      type: object
+      properties:
+        id:
+          type: string
+        account_id:
+          type: string
+        full_name:
+          type: string
+        avatar_url:
+          type: string
+        status:
+          type: string
+          enum: [offline, available, busy]
+        rating_avg:
+          type: number
+          format: float
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+
+    DriverUpdateRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+        avatar_url:
+          type: string
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+
+    Vehicle:
+      type: object
+      properties:
+        plate_number:
+          type: string
+        vehicle_type:
+          type: string
+          enum: [bike, car_4, car_7]
+        brand:
+          type: string
+        model:
+          type: string
+        document_url:
+          type: string
+        verified_status:
+          type: string
+          enum: [pending, verified, rejected]
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,388 @@
+openapi: 3.0.0
+info:
+  title: Admin & Reporting Service API
+  description: |
+    Quản trị vận hành: khách hàng, tài xế, giám sát chuyến, phân quyền, báo cáo, audit log.
+    Map FR: FR-32, FR-33, FR-34, FR-35, FR-36, FR-37.
+    Toàn bộ API trong service này yêu cầu vai trò "operator" hoặc "admin" (QT-21).
+  version: 1.0.0
+
+servers:
+  - url: https://api.cabsystem.local/api/v1/admin
+    description: Production (giả lập)
+  - url: http://localhost:8087/api/v1/admin
+    description: Local dev - Admin Service
+
+tags:
+  - name: AdminCustomers
+  - name: AdminDrivers
+  - name: AdminTrips
+  - name: AdminUsers
+  - name: AdminReports
+
+paths:
+  /customers:
+    get:
+      summary: Tìm kiếm / liệt kê khách hàng
+      description: FR-32 - Nhân viên vận hành tra cứu danh sách khách hàng.
+      operationId: listCustomersAdmin
+      tags: [AdminCustomers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Tìm theo tên hoặc số điện thoại
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Danh sách khách hàng
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerAdminView'
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers/{customerId}:
+    put:
+      summary: Chỉnh sửa thông tin khách hàng
+      description: FR-32
+      operationId: updateCustomerAdmin
+      tags: [AdminCustomers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerAdminView'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerAdminView'
+
+  /drivers:
+    get:
+      summary: Tìm kiếm / liệt kê tài xế và phương tiện
+      description: FR-33
+      operationId: listDriversAdmin
+      tags: [AdminDrivers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: verified_status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, verified, rejected]
+      responses:
+        '200':
+          description: Danh sách tài xế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DriverAdminView'
+
+  /drivers/{driverId}/verify:
+    put:
+      summary: Duyệt hồ sơ và phương tiện tài xế
+      description: FR-33 - Xác nhận giấy tờ, cho phép tài xế được bật trạng thái sẵn sàng (QT-07).
+      operationId: verifyDriver
+      tags: [AdminDrivers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verified_status]
+              properties:
+                verified_status:
+                  type: string
+                  enum: [verified, rejected]
+                note:
+                  type: string
+      responses:
+        '200':
+          description: Cập nhật trạng thái duyệt thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverAdminView'
+
+  /drivers/{driverId}/lock:
+    put:
+      summary: Khóa / mở khóa tài khoản tài xế
+      description: FR-33. Thao tác này bắt buộc được ghi audit log (QT-22, FR-37).
+      operationId: lockDriver
+      tags: [AdminDrivers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [locked]
+              properties:
+                locked:
+                  type: boolean
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Cập nhật trạng thái khóa thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverAdminView'
+
+  /trips/active:
+    get:
+      summary: Giám sát các chuyến đi đang diễn ra
+      description: FR-34 - Xem danh sách chuyến chưa hoàn thành để can thiệp khi có sự cố.
+      operationId: listActiveTrips
+      tags: [AdminTrips]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Danh sách chuyến đang diễn ra
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    trip_id:
+                      type: string
+                    status:
+                      type: string
+                    customer_id:
+                      type: string
+                    driver_id:
+                      type: string
+
+  /users/{userId}/role:
+    put:
+      summary: Phân quyền cho tài khoản nhân viên vận hành
+      description: FR-35 - Chỉ admin cấp cao mới được gọi API này (QT-21).
+      operationId: updateUserRole
+      tags: [AdminUsers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [support_staff, operator, super_admin]
+      responses:
+        '200':
+          description: Phân quyền thành công
+        '403':
+          description: Tài khoản hiện tại không đủ quyền phân quyền cho người khác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /reports:
+    get:
+      summary: Xem báo cáo tổng hợp vận hành
+      description: |
+        FR-36 - Tổng số chuyến, doanh thu, tỷ lệ hoàn thành/hủy, hiệu suất tài xế
+        theo khoảng thời gian.
+      operationId: getReports
+      tags: [AdminReports]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Dữ liệu báo cáo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_trips:
+                    type: integer
+                  total_revenue:
+                    type: number
+                    format: float
+                  completion_rate:
+                    type: number
+                    format: float
+                  cancellation_rate:
+                    type: number
+                    format: float
+                  top_drivers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        driver_id:
+                          type: string
+                        trips_completed:
+                          type: integer
+                        rating_avg:
+                          type: number
+                          format: float
+
+  /audit-logs:
+    get:
+      summary: Xem nhật ký thao tác quản trị (audit log)
+      description: FR-37 - Truy vết ai thực hiện thao tác gì, khi nào (QT-22).
+      operationId: listAuditLogs
+      tags: [AdminReports]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: admin_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Danh sách audit log
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+
+components:
+  schemas:
+    CustomerAdminView:
+      type: object
+      properties:
+        id:
+          type: string
+        full_name:
+          type: string
+        phone:
+          type: string
+        rating_avg:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [active, suspended]
+
+    DriverAdminView:
+      type: object
+      properties:
+        id:
+          type: string
+        full_name:
+          type: string
+        phone:
+          type: string
+        vehicle_plate:
+          type: string
+        verified_status:
+          type: string
+          enum: [pending, verified, rejected]
+        locked:
+          type: boolean
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+        admin_id:
+          type: string
+        action:
+          type: string
+        target_entity:
+          type: string
+        target_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
