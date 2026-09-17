@@ -29,9 +29,3 @@ Vì hệ thống có nhiều nghiệp vụ độc lập nhưng liên kết chặ
 | [`API_document.md`](./API_document.md) | Tài liệu tổng quan API: quy ước chung, danh mục 32 endpoint, mã lỗi chuẩn, hướng dẫn xem chi tiết | Tuần 2 |
 | [`openapi.yaml`](./openapi.yaml) | Đặc tả OpenAPI 3.0 **gộp** toàn bộ API — import vào [Swagger Editor](https://editor.swagger.io) hoặc Postman để xem/test trực tiếp | Tuần 2 |
 | [`API/`](./API) | 11 file OpenAPI **tách riêng theo từng resource** (auth, trip, payment, matching...) — dùng khi cần xem/sửa 1 phần cụ thể mà không mở file gộp | Tuần 2 |
-
-### Bắt đầu từ đâu?
-
-- Muốn hiểu **nghiệp vụ hệ thống** (actor, use case, ERD, business rules...) → đọc `srs.md`
-- Muốn xem **API có gì, gọi như thế nào** → đọc `API_document.md` trước, sau đó mở `openapi.yaml` bằng Swagger Editor để xem chi tiết từng endpoint
-- Muốn sửa/thêm 1 API cụ thể → vào thư mục `API/`, tìm đúng file resource tương ứng (vd. sửa API thanh toán → `API/payment-service.yaml`)
