@@ -71,6 +71,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+    delete:
+      summary: Xóa tài khoản khách hàng
+      description: |
+        Bổ sung để hoàn thiện CRUD cho resource Customer (không map FR cụ thể nào trong SRS gốc).
+        Thực hiện soft delete (đánh dấu status = "deleted", không xóa vật lý) để vẫn giữ được
+        lịch sử chuyến đi/giao dịch liên quan phục vụ báo cáo và đối soát (đúng tinh thần NFR-22).
+      operationId: deleteMyCustomerAccount
+      tags: [Customers]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Xóa tài khoản thành công (soft delete)
+        '409':
+          description: Không thể xóa khi đang có chuyến đi chưa hoàn thành
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
