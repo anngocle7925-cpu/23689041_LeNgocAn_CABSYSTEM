@@ -95,6 +95,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+    delete:
+      summary: Xóa tài khoản tài xế
+      description: |
+        Bổ sung để hoàn thiện CRUD cho resource Driver (không map FR cụ thể nào trong SRS gốc).
+        Thực hiện soft delete (đánh dấu status = "deleted"), không xóa vật lý để giữ lịch sử
+        chuyến đi/đánh giá liên quan (đúng tinh thần NFR-22). Chỉ cho phép khi tài xế không
+        đang trong 1 chuyến hoạt động.
+      operationId: deleteMyDriverAccount
+      tags: [Drivers]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Xóa tài khoản thành công (soft delete)
+        '409':
+          description: Không thể xóa khi đang có chuyến đi chưa hoàn thành
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
