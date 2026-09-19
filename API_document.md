@@ -55,15 +55,19 @@ Tất cả request (trừ `/auth/register` và `/auth/login`) đều yêu cầu 
 | POST | `/auth/login` | Đăng nhập (khách hàng & tài xế) | FR-02 | Auth |
 | GET | `/customers/me` | Xem hồ sơ khách hàng hiện tại | FR-03 | Customer Profile |
 | PUT | `/customers/me` | Cập nhật hồ sơ khách hàng | FR-03 | Customer Profile |
+| DELETE | `/customers/me` | Xóa tài khoản khách hàng (soft delete) | *(bonus, hoàn thiện CRUD)* | Customer Profile |
 | POST | `/drivers/register` | Đăng ký / tạo tài khoản tài xế | FR-04 | Driver Profile |
 | GET | `/drivers/me` | Xem hồ sơ & phương tiện tài xế | FR-05 | Driver Profile |
 | PUT | `/drivers/me` | Cập nhật hồ sơ & phương tiện tài xế | FR-05 | Driver Profile |
+| DELETE | `/drivers/me` | Xóa tài khoản tài xế (soft delete) | *(bonus, hoàn thiện CRUD)* | Driver Profile |
 | POST | `/trips` | Đặt xe (tạo yêu cầu chuyến đi) | FR-07, FR-08, FR-09 | Trip |
 | GET | `/trips` | Xem lịch sử chuyến đi | FR-12 | Trip |
 | GET | `/trips/{tripId}` | Xem chi tiết / theo dõi chuyến real-time | FR-10 | Trip |
 | POST | `/trips/{tripId}/cancel` | Hủy chuyến đi | FR-11 | Trip Status |
 | PATCH | `/trips/{tripId}/status` | (Tài xế) Cập nhật trạng thái chuyến | FR-21 | Trip Status |
 | POST | `/trips/{tripId}/rating` | Đánh giá tài xế sau chuyến | FR-13 | Trip Rating |
+| GET | `/trips/{tripId}/rating` | Xem đánh giá đã gửi | *(bonus, hoàn thiện CRUD)* | Trip Rating |
+| PUT | `/trips/{tripId}/rating` | Sửa đánh giá (trong 24 giờ) | *(bonus, hoàn thiện CRUD)* | Trip Rating |
 | POST | `/internal/matching/requests` | Yêu cầu tìm tài xế cho 1 chuyến | FR-14, FR-15 | Matching *(internal)* |
 | GET | `/internal/matching/requests/{requestId}` | Truy vấn trạng thái matching | FR-17 | Matching *(internal)* |
 | POST | `/internal/matching/requests/{requestId}/driver-response` | Ghi nhận phản hồi tài xế cho matching | FR-16 | Matching *(internal)* |
@@ -83,11 +87,25 @@ Tất cả request (trừ `/auth/register` và `/auth/login`) đều yêu cầu 
 | PUT | `/admin/drivers/{driverId}/verify` | Duyệt hồ sơ & phương tiện tài xế | FR-33 | Admin |
 | PUT | `/admin/drivers/{driverId}/lock` | Khóa / mở khóa tài khoản tài xế | FR-33, FR-37 | Admin |
 | GET | `/admin/trips/active` | Giám sát chuyến đang diễn ra | FR-34 | Admin |
+| GET | `/admin/users` | Liệt kê tài khoản nhân viên vận hành | *(bonus, hoàn thiện CRUD)* | Admin |
+| POST | `/admin/users` | Tạo tài khoản nhân viên vận hành mới | *(bonus, hoàn thiện CRUD)* | Admin |
 | PUT | `/admin/users/{userId}/role` | Phân quyền nhân viên vận hành | FR-35 | Admin |
 | GET | `/admin/reports` | Xem báo cáo tổng hợp vận hành | FR-36 | Admin |
 | GET | `/admin/audit-logs` | Xem nhật ký thao tác quản trị | FR-37 | Admin |
 
-**Tổng cộng: 32 endpoint**, bao phủ 31/34 FR chức năng (không tính FR-06, FR-26, FR-31 — xem mục 6).
+**Tổng cộng: 41 endpoint** (35 endpoint map trực tiếp theo FR + 6 endpoint bổ sung để hoàn thiện CRUD cho các resource Customer, Driver, Rating, Admin User — xem giải thích ở mục 6).
+
+### 3.1. Đối chiếu CRUD theo từng resource chính
+
+| Resource | Create | Read | Update | Delete | Ghi chú |
+|---|---|---|---|---|---|
+| Customer | ✅ `/auth/register` | ✅ `GET /customers/me` | ✅ `PUT /customers/me` | ✅ `DELETE /customers/me` | Đầy đủ CRUD |
+| Driver | ✅ `/drivers/register` | ✅ `GET /drivers/me` | ✅ `PUT /drivers/me` | ✅ `DELETE /drivers/me` | Đầy đủ CRUD |
+| Trip | ✅ `POST /trips` | ✅ `GET /trips`, `GET /trips/{id}` | ✅ `PATCH .../status` | ⚠️ Không có | **Cố tình không có Delete** — xem mục 6 |
+| Rating | ✅ `POST .../rating` | ✅ `GET .../rating` | ✅ `PUT .../rating` | ⚠️ Không có | Không cho xóa đánh giá để tránh gian lận (xóa đánh giá xấu) |
+| Payment | ✅ `POST /payments` | ✅ `GET /payments/{id}` | ⚠️ Chỉ có `retry`, không sửa trực tiếp | ⚠️ Không có | **Cố tình không có Update/Delete** — xem mục 6 |
+| Admin User | ✅ `POST /admin/users` | ✅ `GET /admin/users` | ✅ `PUT .../role` | ⚠️ Không có | Có thể bổ sung sau nếu cần "vô hiệu hóa" tài khoản operator |
+| AuditLog | ⚠️ Tự động ghi | ✅ `GET /admin/audit-logs` | ⚠️ Không có | ⚠️ Không có | **Cố tình không có C/U/D thủ công** — xem mục 6 |
 
 ---
 
@@ -148,7 +166,9 @@ File `openapi.yaml` chứa đầy đủ 9 phần cho mỗi API: Title, Endpoint,
 
 ---
 
-## 6. Các FR không có endpoint riêng
+## 6. Các FR không có endpoint riêng, và các resource cố tình không có đủ CRUD
+
+### 6.1. FR không sinh ra endpoint riêng
 
 3 FR sau đây **không sinh ra API riêng** vì bản chất là ràng buộc/yêu cầu kiến trúc, không phải hành vi có thể "gọi" được (xem lại phân tích Cách A khi thiết kế API):
 
@@ -157,6 +177,18 @@ File `openapi.yaml` chứa đầy đủ 9 phần cho mỗi API: Title, Endpoint,
 | FR-06 | Xác thực & phân quyền theo vai trò | Là cross-cutting concern, áp dụng lên **mọi** API khác dưới dạng middleware | Middleware xác thực JWT + kiểm tra role, chạy trước mọi request (trừ register/login) |
 | FR-26 | Không lưu thông tin nhạy cảm của thẻ/tài khoản thanh toán | Là ràng buộc thiết kế (constraint), không phải hành động | Áp dụng trong toàn bộ `payment-service`: không có field nào chứa số thẻ trong schema `Payment` |
 | FR-31 | Kiến trúc thông báo cho phép mở rộng kênh gửi mới | Là yêu cầu kiến trúc (adapter pattern), không phải 1 lời gọi API | Trường `channel` trong `POST /internal/notifications` để dạng string mở, xử lý qua adapter bên trong Notification Service |
+
+### 6.2. Resource cố tình không có đủ 4 thao tác CRUD
+
+Một yêu cầu phổ biến khi thiết kế API là "mỗi resource nên có đủ CRUD". Đội dự án đã rà soát và bổ sung 6 endpoint (mục 3, đánh dấu "bonus, hoàn thiện CRUD") cho các resource còn thiếu. Tuy nhiên với 3 resource sau, **việc thiếu Update/Delete là chủ đích**, không phải bỏ sót:
+
+| Resource | Thao tác bị thiếu | Lý do cố tình không làm |
+|---|---|---|
+| **Trip** | Delete | Xóa vật lý một chuyến đi sẽ làm mất dữ liệu phục vụ báo cáo doanh thu, tra soát khiếu nại, và tính tỷ lệ hoàn thành/hủy (BR-22, NFR-22 — yêu cầu lưu trữ lịch sử tối thiểu một khoảng thời gian). "Hủy chuyến" (`POST /trips/{id}/cancel`) đã đóng vai trò state-transition thay cho Delete. |
+| **Payment** | Update, Delete | Cho phép sửa/xóa trực tiếp bản ghi giao dịch tài chính vi phạm nguyên tắc toàn vẹn dữ liệu kế toán và làm mất khả năng đối soát với cổng thanh toán bên thứ ba. `POST /payments/{id}/retry` tạo ra một lần xử lý mới thay vì sửa bản ghi cũ — đây là pattern chuẩn cho hệ thống thanh toán (event-sourcing-like), không phải thiếu sót. |
+| **AuditLog** | Create (thủ công), Update, Delete | Audit log theo định nghĩa phải **bất biến** (immutable) — nếu cho phép sửa/xóa thì mất luôn giá trị làm bằng chứng khi kiểm toán (chính QT-22 do đội dự án tự định nghĩa ở Bước 7). Log được hệ thống tự động ghi khi có sự kiện xảy ra, không qua endpoint tạo thủ công. |
+
+**Kết luận khi trình bày với giảng viên:** đây không phải là API bị thiếu, mà là quyết định thiết kế có chủ đích, dựa trên đúng các ràng buộc đã phân tích từ Bước 1 đến Bước 14 của `srs.md` (đặc biệt là NFR-22 và QT-22).
 
 ---
 
