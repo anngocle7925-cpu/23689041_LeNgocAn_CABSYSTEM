@@ -187,6 +187,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+    delete:
+      summary: Xóa tài khoản khách hàng
+      description: 'Bổ sung để hoàn thiện CRUD cho resource Customer (không map FR cụ thể nào trong SRS
+        gốc).
+
+        Thực hiện soft delete (đánh dấu status = "deleted", không xóa vật lý) để vẫn giữ được
+
+        lịch sử chuyến đi/giao dịch liên quan phục vụ báo cáo và đối soát (đúng tinh thần NFR-22).
+
+        '
+      operationId: deleteMyCustomerAccount
+      tags:
+      - Customers
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Xóa tài khoản thành công (soft delete)
+        '409':
+          description: Không thể xóa khi đang có chuyến đi chưa hoàn thành
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /drivers/register:
     post:
       summary: Đăng ký / tạo tài khoản tài xế
@@ -270,6 +294,32 @@ paths:
                 $ref: '#/components/schemas/Driver'
         '400':
           description: Thiếu thông tin bắt buộc (giấy tờ, biển số...)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Xóa tài khoản tài xế
+      description: 'Bổ sung để hoàn thiện CRUD cho resource Driver (không map FR cụ thể nào trong SRS
+        gốc).
+
+        Thực hiện soft delete (đánh dấu status = "deleted"), không xóa vật lý để giữ lịch sử
+
+        chuyến đi/đánh giá liên quan (đúng tinh thần NFR-22). Chỉ cho phép khi tài xế không
+
+        đang trong 1 chuyến hoạt động.
+
+        '
+      operationId: deleteMyDriverAccount
+      tags:
+      - Drivers
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Xóa tài khoản thành công (soft delete)
+        '409':
+          description: Không thể xóa khi đang có chuyến đi chưa hoàn thành
           content:
             application/json:
               schema:
@@ -518,6 +568,87 @@ paths:
                 $ref: '#/components/schemas/Rating'
         '409':
           description: Chuyến chưa hoàn thành hoặc đã được đánh giá trước đó
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Xem đánh giá đã gửi cho chuyến đi
+      description: 'Bổ sung để hoàn thiện CRUD cho resource Rating (không map FR cụ thể nào trong SRS
+        gốc).
+
+        Cho phép khách hàng xem lại đánh giá mình đã gửi cho chuyến này.
+
+        '
+      operationId: getTripRating
+      tags:
+      - TripRating
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: tripId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Thông tin đánh giá
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+        '404':
+          description: Chuyến này chưa được đánh giá
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Sửa đánh giá đã gửi
+      description: 'Bổ sung để hoàn thiện CRUD cho resource Rating (không map FR cụ thể nào trong SRS
+        gốc).
+
+        Chỉ cho phép sửa trong vòng 24 giờ kể từ lúc gửi đánh giá, sau đó khóa để đảm bảo
+
+        tính tin cậy cho rating_avg của tài xế.
+
+        '
+      operationId: updateTripRating
+      tags:
+      - TripRating
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: tripId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - stars
+              properties:
+                stars:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Cập nhật đánh giá thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+        '409':
+          description: Đã quá thời hạn cho phép sửa đánh giá (quá 24 giờ)
           content:
             application/json:
               schema:
@@ -1249,6 +1380,92 @@ paths:
                       type: string
                     driver_id:
                       type: string
+  /admin/users:
+    get:
+      summary: Liệt kê tài khoản nhân viên vận hành
+      description: 'Bổ sung để hoàn thiện CRUD cho resource Admin User (không map FR cụ thể nào trong
+        SRS gốc).
+
+        Chỉ admin cấp cao mới được gọi API này (QT-21).
+
+        '
+      operationId: listAdminUsers
+      tags:
+      - AdminUsers
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Danh sách tài khoản nhân viên vận hành
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUserView'
+        '403':
+          description: Không đủ quyền
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Tạo tài khoản nhân viên vận hành mới
+      description: 'Bổ sung để hoàn thiện CRUD cho resource Admin User (không map FR cụ thể nào trong
+        SRS gốc).
+
+        Chỉ admin cấp cao mới được gọi API này (QT-21).
+
+        '
+      operationId: createAdminUser
+      tags:
+      - AdminUsers
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - phone
+              - password
+              - full_name
+              - role
+              properties:
+                phone:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                full_name:
+                  type: string
+                role:
+                  type: string
+                  enum:
+                  - support_staff
+                  - operator
+                  - super_admin
+      responses:
+        '201':
+          description: Tạo tài khoản thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserView'
+        '403':
+          description: Không đủ quyền tạo tài khoản quản trị
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Số điện thoại đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /admin/users/{userId}/role:
     put:
       summary: Phân quyền cho tài khoản nhân viên vận hành
@@ -1679,6 +1896,24 @@ components:
           type: string
           format: date-time
           nullable: true
+    AdminUserView:
+      type: object
+      properties:
+        id:
+          type: string
+        full_name:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum:
+          - support_staff
+          - operator
+          - super_admin
+        created_at:
+          type: string
+          format: date-time
     CustomerAdminView:
       type: object
       properties:
